@@ -24,7 +24,9 @@ img{max-width:100%}
 .ddc-badge{position:absolute;top:-4px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--danger);color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center;border:2px solid var(--surface)}
 .ddc-badge-in{color:var(--danger)}
 .ddc-rq{margin:6px 0 4px;border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:color-mix(in srgb,var(--warn) 7%,var(--surface))}
-.ddc-rq-a{display:flex;gap:6px;flex:0 0 auto}
+.ddc-rq-a{display:flex;gap:6px;flex:0 0 auto;align-items:center}
+.ddc-role{background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r);padding:3px 6px;font-size:12.5px;color:var(--fg)}
+.ddc-team div{flex-wrap:wrap}
 .ddc-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px}
 .ddc-or::before,.ddc-or::after{content:"";flex:1;height:1px;background:var(--line)}
 .ddc-link{display:flex;gap:8px;flex-wrap:wrap}
@@ -423,8 +425,8 @@ const CATS=[
  {id:"equipment",label:"Matériel spécial",color:"#5d6b7a"},
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
-/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP */
-const APP_VERSION="1.0";const APP_DATE="28 oct. 2026";
+/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur */
+const APP_VERSION="1.1";const APP_DATE="28 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -506,7 +508,7 @@ class MemDB{
 }
 
 /* ---------- state ---------- */
-const S={db:null,user:null,sample:null,room:null,dl:null,me:null,canWrite:true,local:false,
+const S={db:null,user:null,sample:null,room:null,dl:null,me:null,canWrite:true,canComment:true,role:null,local:false,
   projects:[],projectsLoaded:false,pid:null,scenes:[],elements:[],comments:[],sid:null,tab:"scenes",
   peers:[],busy:null,analyzing:new Set(),aiOff:false,filterCat:null,search:"",rpSearch:"",unsubP:[],holder:uid(),days:[],locations:[],planGroup:"lieu",dragging:null,pendingRender:false,modalRefresh:null};
 
@@ -529,9 +531,13 @@ async function boot(){
   if(user){
     try{S.me=await user.me();}catch{}
     try{const w=await user.can("data.write");if(w===false)S.canWrite=false;}catch{}
+    try{if(user.role)S.role=await user.role();}catch{}
     try{S.isAdmin=!!(await user.isOwner());}catch{S.isAdmin=false;}
   }
   if(S.local)showBanner("Mode local : ouvre cette page sur claude.ai pour partager les projets avec ton équipe. Rien n'est enregistré ici.");
+  S.canComment=S.canWrite||S.role==="commenter";
+  if(S.role==="viewer")showBanner("Accès lecteur : tu peux consulter et exporter. Pour commenter ou modifier, demande un autre rôle à l'administrateur.");
+  else if(S.role==="commenter")showBanner("Accès commentateur : tu peux consulter et commenter les scènes. Pour modifier, demande le rôle Éditeur à l'administrateur.");
   else if(!S.canWrite)showBanner("Lecture seule : demande à la personne qui a partagé cette page de te donner le rôle Contributeur pour modifier le dépouillement.");
   if(!sample)S.aiOff=true;
   if(room){
@@ -753,7 +759,7 @@ function renderSheet(){
   <div class="sheet-sec">
     <h2>Commentaires</h2>
     <div class="comments" id="comments"></div>
-    ${S.canWrite?`<form class="composer" id="cmform"><textarea id="cm-text" rows="2" placeholder="Une remarque pour l'équipe sur cette scène"></textarea><div><button class="btn" type="submit">Envoyer</button></div></form>`:""}
+    ${S.canComment?`<form class="composer" id="cmform"><textarea id="cm-text" rows="2" placeholder="Une remarque pour l'équipe sur cette scène"></textarea><div><button class="btn" type="submit">Envoyer</button></div></form>`:""}
   </div>`;
   sh.querySelectorAll(".el-menu").forEach(b=>b.onclick=()=>{const e=S.elements.find(x=>x.id===b.dataset.eid);if(e)elementMenu(e,b);});
   const af=$("#addform");
@@ -779,7 +785,7 @@ async function renderComments(sid){
     const body=document.createElement("div");
     const who=document.createElement("div");who.className="who";who.textContent=pr.isMe?"Toi":(pr.name||"Quelqu'un");
     const sm=document.createElement("small");sm.textContent=timeAgo(c.at||Date.now());who.append(sm);
-    if(S.canWrite&&(pr.isMe||(S.local))){const del=document.createElement("button");del.className="del";del.textContent="Supprimer";del.onclick=()=>S.db.doc(base()+"/comments/"+c.id).delete().catch(e=>toast("Suppression impossible ("+e.code+")"));who.append(del);}
+    if(S.canComment&&(pr.isMe||(S.local))){const del=document.createElement("button");del.className="del";del.textContent="Supprimer";del.onclick=()=>S.db.doc(base()+"/comments/"+c.id).delete().catch(e=>toast("Suppression impossible ("+e.code+")"));who.append(del);}
     const p=document.createElement("p");p.textContent=c.text;
     body.append(who,p);d.append(img,body);box.append(d);}
 }
