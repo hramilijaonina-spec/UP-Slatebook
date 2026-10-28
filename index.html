@@ -437,7 +437,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets */
-const APP_VERSION="1.2";const APP_DATE="28 oct. 2026";
+const APP_VERSION="1.2.1";const APP_DATE="28 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -1348,6 +1348,7 @@ const knownLocations=()=>[...new Set(S.scenes.map(s=>s.location).filter(Boolean)
 function renderEditor(){
   const root=$("#editor");if(!root||!S.pid)return;
   if(!root.dataset.ready){root.dataset.ready="1";
+    ED.sigs.clear();ED.lastBlock=null;   /* nouvel éditeur (retour sur l'onglet) : tout redessiner */
     root.innerHTML=`<div class="ed-bar">
         <div class="ed-types" role="toolbar" aria-label="Type de bloc">${["h","a","c","p","d","t","s"].map(k=>`<button type="button" class="ed-tb" data-t="${k}" aria-pressed="false" title="${BT[k].label} · ${MOD}${BT[k].key}" ${S.canWrite?"":"disabled"}><span class="ed-ic ic-${k}" aria-hidden="true"></span>${k==="h"?"Scène":BT[k].label}</button>`).join("")}</div>
         <span class="ed-hint">ou Tab · Entrée : bloc suivant · Maj+Entrée : retour à la ligne</span>
