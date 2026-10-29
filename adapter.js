@@ -255,7 +255,7 @@ function build(u,isAdmin,role){
     let r;
     try{r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:opts.signal,
       headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:CFG.model||"claude-sonnet-5-5",max_tokens:4096,messages:[{role:"user",content:String(prompt)}]})});}
+      body:JSON.stringify({model:CFG.model||"claude-sonnet-5-5",max_tokens:16000,messages:[{role:"user",content:String(prompt)}]})});}
     catch(e){if(e&&e.name==="AbortError")throw{code:"cancelled"};throw{code:navigator.onLine?"upstream_error":"offline",message:String(e)};}
     if(r.status===401||r.status===403)throw{code:"bad_key",message:"clé refusée"};
     if(r.status===429)throw{code:"rate_limited"};
