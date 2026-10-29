@@ -499,6 +499,14 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
 .dct tr.dc-flash td{animation:dcf 1.2s ease-out}
 .dct tr.opt td:not(.dct-seq){opacity:.42;background:repeating-linear-gradient(135deg,transparent 0 8px,color-mix(in srgb,var(--fg) 4%,transparent) 8px 16px)}
 .dct tr.opt:hover td:not(.dct-seq),.dct tr.opt:focus-within td:not(.dct-seq){opacity:.75}
+.dc-switch{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--fg);cursor:pointer;user-select:none;position:relative;white-space:nowrap}
+.dc-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.dc-switch .tr{width:36px;height:20px;border-radius:10px;background:var(--line-strong);position:relative;transition:background .15s;flex:0 0 auto}
+.dc-switch .tr::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--fg);transition:transform .15s}
+.dc-switch input:checked+.tr{background:var(--t-dec)}
+.dc-switch input:checked+.tr::after{transform:translateX(16px)}
+.dc-switch input:focus-visible+.tr{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.dc-switch .tr,.dc-switch .tr::after{transition:none}}
 .dct .opt-tag{display:inline-block;margin-top:3px;padding:1px 6px;border:1px solid currentColor;border-radius:9px;font-size:10.5px!important;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
 .dc-pop{position:fixed;z-index:60;width:min(300px,calc(100vw - 16px));background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 10px 30px rgb(0 0 0 / .35);padding:12px;display:flex;flex-direction:column;gap:10px}
 .dc-pop h4{margin:0;font-family:var(--f-display);font-size:17px;text-transform:uppercase;letter-spacing:.03em}
@@ -590,7 +598,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés */
-const APP_VERSION="1.4.1";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.4.2";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -2090,7 +2098,7 @@ const MOVES=["Fixe","Panoramique","Travelling avant","Travelling arrière","Trav
 const ANGLES=["Normal","Face caméra","Plongée","Contre-plongée","Amorce (par-dessus l'épaule)","Subjectif","Plan débullé"];
 const EFFECTS=["—","Arrêt sur image","Ralenti","Accéléré","Time-lapse"];
 const SHOT_VB={PG:[-190,-150,480,270],PE:[-80,-36,260,146.25],PM:[-50,-6,200,112.5],PA:[-15.8,-4,131.6,74],PRT:[-0.6,-2,101.3,57],PRP:[14.4,0,71.1,40],GP:[30.4,1.5,39.1,22],TGP:[41.1,7,17.8,10],"2S":[-10.8,-4,131.6,74]};
-const DEC={view:"edit",ai:new Set(),prog:new Map(),timers:new Map(),focus:null};
+const DEC={view:"edit",ai:new Set(),prog:new Map(),timers:new Map(),focus:null,showOpt:store.get("upsb.dec.opt")!=="0"};
 
 /* vignettes de cadre dessinées selon la valeur de plan */
 function dcFigure(x){return `<g class="dc-fig" transform="translate(${x-50},0)"><circle cx="50" cy="12" r="7"/><path d="M38 24 Q50 19 62 24 L60 56 L40 56 Z" stroke-width="1"/><line x1="39" y1="26" x2="35" y2="58"/><line x1="61" y1="26" x2="65" y2="58"/><line x1="45" y1="57" x2="43" y2="98"/><line x1="55" y1="57" x2="57" y2="98"/><circle class="eye" cx="47.4" cy="11.6" r="1"/><circle class="eye" cx="52.6" cy="11.6" r="1"/></g>`;}
@@ -2142,16 +2150,17 @@ function decEditHTML(){
     <div class="actions">
       <label class="target">Durée cible <input type="text" id="dc-target" value="${tgt?esc(fmtDur(tgt)):""}" placeholder="2:30" inputmode="numeric" ${S.canWrite?"":"disabled"}></label>
       ${canAI?`<button class="btn primary" id="dc-ai" ${S.busy||!todo?"disabled":""} title="${todo?"Propose les plans des scènes pas encore découpées":"Toutes les scènes ont déjà des plans"}">Découper avec l'IA${todo&&todo<S.scenes.length?" · "+todo+" scène"+(todo>1?"s":""):""}</button>`:""}
+      <label class="dc-switch" title="Afficher ou masquer les plans à 0 s"><input type="checkbox" role="switch" id="dc-opt" ${DEC.showOpt?"checked":""}><span class="tr" aria-hidden="true"></span>Plans optionnels${S.shots.some(isOpt)?" ("+S.shots.filter(isOpt).length+")":""}</label>
       ${S.dl?`<button class="btn" id="dc-csv" ${S.shots.length?"":"disabled"}>Exporter CSV</button>`:""}
       <button class="btn" id="dc-copy" ${S.shots.length?"":"disabled"}>Copier le tableau</button>
     </div></div>`;
   const note=!S.shots.length?`<div class="dc-note"><b>Le découpage est vide.</b> Ajoute les plans scène par scène avec « + Ajouter un plan »${canAI?", ou clique sur <b>Découper avec l'IA</b> pour une première proposition plan par plan":""}. Clique ensuite sur une cellule pour la modifier.</div>`:"";
   let body="";
-  for(const s of S.scenes){const list=shotsOf(s.id);const rows=list.length+(S.canWrite?1:0)||1;
-    const seq=`<td class="dct-seq" rowspan="${rows}"><b>${esc(s.num)}</b><span class="h">${esc(s.heading)}</span><small>${list.length} plan${list.length>1?"s":""} · ${fmtDur(sumDur(list))}${list.some(isOpt)?" · "+list.filter(isOpt).length+" optionnel"+(list.filter(isOpt).length>1?"s":""):""}</small>${seqAI(s,list,canAI)}</td>`;
+  for(const s of S.scenes){const all=shotsOf(s.id);const nOpt=all.filter(isOpt).length;const list=DEC.showOpt?all:all.filter(x=>!isOpt(x));const rows=list.length+(S.canWrite?1:0)||1;
+    const seq=`<td class="dct-seq" rowspan="${rows}"><b>${esc(s.num)}</b><span class="h">${esc(s.heading)}</span><small>${all.length} plan${all.length>1?"s":""} · ${fmtDur(sumDur(all))}${nOpt?" · "+nOpt+" optionnel"+(nOpt>1?"s":"")+(DEC.showOpt?"":" masqué"+(nOpt>1?"s":"")):""}</small>${seqAI(s,all,canAI)}</td>`;
     list.forEach((x,i)=>{body+=shotRowHTML(x,i,i===0?seq:"");});
     if(S.canWrite)body+=`<tr class="dct-add${list.length?"":" first"}">${list.length?"":seq}<td colspan="6"><button class="dc-add" data-sid="${esc(s.id)}">+ Ajouter un plan à la scène ${esc(s.num)}</button></td></tr>`;
-    else if(!list.length)body+=`<tr class="first">${seq}<td colspan="6" class="dct-none">Aucun plan pour cette scène.</td></tr>`;
+    else if(!list.length)body+=`<tr class="first">${seq}<td colspan="6" class="dct-none">${all.length?"Plans optionnels masqués.":"Aucun plan pour cette scène."}</td></tr>`;
   }
   const table=S.scenes.length?`<div class="dct-wrap"><table class="dct"><thead><tr><th>#Séq</th><th>#Plan</th><th>Description</th><th>Audio</th><th>Caméra</th><th>Vignette</th><th>Notes</th></tr></thead><tbody>${body}</tbody></table></div>`
     :`<p class="empty" style="margin-top:20px">Ce projet n'a pas encore de scène. Importe ou écris le scénario d'abord.</p>`;
@@ -2179,6 +2188,7 @@ function shotRowHTML(x,i,seq){
 function bindDec(box){
   const on=(id,fn)=>{const b=document.getElementById(id);if(b)b.onclick=fn;};
   on("dc-ai",decoupeAll);on("dc-csv",exportDecCSV);on("dc-copy",copyDec);
+  const op=$("#dc-opt");if(op)op.onchange=()=>{DEC.showOpt=op.checked;store.set("upsb.dec.opt",op.checked?"1":"0");render();};
   const tg=$("#dc-target");if(tg)tg.onchange=()=>S.db.doc("projects/"+S.pid).update({targetSec:parseDur(tg.value)}).catch(writeErr);
   box.querySelectorAll(".dc-ai1").forEach(b=>b.onclick=()=>decoupeScene(b.dataset.sid));
   box.querySelectorAll(".dc-redo").forEach(b=>b.onclick=()=>confirmRedo(b.dataset.sid));
@@ -2438,7 +2448,7 @@ function openThumb(x){
 /* aperçu : export et copie */
 function decRows(){
   const out=[["#SÉQ","#PLAN","DESCRIPTION","AUDIO","CAMÉRA","VIGNETTE","NOTES","DURÉE (s)"]];
-  for(const s of S.scenes)for(const x of shotsOf(s.id))out.push([s.num+" – "+s.heading,shotNum(x)+(isOpt(x)?" (optionnel)":""),x.action||"",x.sound||"",
+  for(const s of S.scenes)for(const x of shotsOf(s.id).filter(x=>DEC.showOpt||!isOpt(x)))out.push([s.num+" – "+s.heading,shotNum(x)+(isOpt(x)?" (optionnel)":""),x.action||"",x.sound||"",
     [SHOT_T[x.type]||x.type,x.move,x.angle].concat(x.effect&&x.effect!=="—"?[x.effect]:[]).filter(Boolean).join(" – "),
     (x.type||"")+" – "+(SHOT_T[x.type]||"")+(x.img?" (photo)":""),x.notes||"",String(x.dur??"").replace(".",",")]);
   return out;
