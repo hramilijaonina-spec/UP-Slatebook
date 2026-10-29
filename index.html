@@ -571,6 +571,7 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
   position:fixed;inset:0;z-index:90;display:block;overflow-y:auto;overflow-x:hidden;background:var(--cl-slate);color:var(--cl-chalk);font-family:var(--cl-f-label);color-scheme:dark;
   padding-top:calc(10px + env(safe-area-inset-top,0px));padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
   padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));-webkit-tap-highlight-color:transparent}
+#clap[hidden]{display:none!important}
 #clap *{box-sizing:border-box}
 #clap button{font:inherit;color:inherit;cursor:pointer}
 #clap :focus-visible{outline:2px solid var(--cl-tag);outline-offset:2px}
@@ -757,8 +758,8 @@ const CATS=[
  {id:"equipment",label:"Matériel spécial",color:"#5d6b7a"},
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
-/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre */
-const APP_VERSION="1.7.3";const APP_DATE="29 oct. 2026";
+/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série */
+const APP_VERSION="1.7.4";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -1218,11 +1219,33 @@ function modal(html){const sc=document.createElement("div");sc.className="scrim"
   sc.addEventListener("pointerdown",e=>{if(e.target===sc)sc.remove();});document.body.append(sc);
   sc.addEventListener("keydown",e=>{if(e.key==="Escape")sc.remove();});return sc;}
 function renameProject(){
-  const p=P();const m=modal(`<h3>Renommer le projet</h3><input type="text" id="rn" value="${esc(p.name)}" aria-label="Nom du projet"><div class="mfoot"><button class="btn" id="rn-c">Annuler</button><button class="btn primary" id="rn-ok">Renommer</button></div>`);
-  const i=m.querySelector("#rn");i.focus();i.select();
+  const p=P();if(!p)return;
+  /* un projet sans épisodes : on renomme le projet */
+  if(!p.seriesId){
+    const m=modal(`<h3>Renommer le projet</h3><input type="text" id="rn" value="${esc(p.name)}" aria-label="Nom du projet"><div class="mfoot"><button class="btn" id="rn-c">Annuler</button><button class="btn primary" id="rn-ok">Renommer</button></div>`);
+    const i=m.querySelector("#rn");i.focus();i.select();
+    m.querySelector("#rn-c").onclick=()=>m.remove();
+    const go=()=>{const v=i.value.trim();if(v)S.db.doc("projects/"+p.id).update({name:v.slice(0,120)}).catch(writeErr);m.remove();};
+    m.querySelector("#rn-ok").onclick=go;i.onkeydown=e=>{if(e.key==="Enter")go();};
+    return;}
+  /* un épisode : le nom de la série (affiché dans « Projet en cours ») et le titre de cet épisode */
+  const eps=S.projects.filter(x=>x.seriesId===p.seriesId);
+  const sname=p.seriesName||p.name;
+  const m=modal(`<h3>Renommer</h3>
+    <label class="row"><span class="label">Nom de la série · ${eps.length} épisode${eps.length>1?"s":""}</span><input type="text" id="rn-s" value="${esc(sname)}" aria-label="Nom de la série"></label>
+    <label class="row"><span class="label">Titre de l'épisode ${esc(p.episode??"")} (facultatif)</span><input type="text" id="rn-e" value="${esc(p.episodeTitle||"")}" placeholder="Ex. Le kiosque" aria-label="Titre de l'épisode"></label>
+    <div class="mfoot"><button class="btn" id="rn-c">Annuler</button><button class="btn primary" id="rn-ok">Renommer</button></div>`);
+  const si=m.querySelector("#rn-s"),ei=m.querySelector("#rn-e");si.focus();si.select();
   m.querySelector("#rn-c").onclick=()=>m.remove();
-  const go=()=>{const v=i.value.trim();if(v)S.db.doc("projects/"+p.id).update({name:v}).catch(writeErr);m.remove();};
-  m.querySelector("#rn-ok").onclick=go;i.onkeydown=e=>{if(e.key==="Enter")go();};
+  const go=async()=>{
+    const sv=si.value.trim().slice(0,120);if(!sv){si.focus();return;}
+    const ev=ei.value.trim().slice(0,120);m.remove();
+    const full=(x,t)=>sv+" – Ép. "+(x.episode??"?")+(t?" · "+t:"");
+    try{await chunked(eps,5,x=>{const t=x.id===p.id?ev:(x.episodeTitle||"");
+        return S.db.doc("projects/"+x.id).update({seriesName:sv,name:full(x,t).slice(0,200),...(x.id===p.id?{episodeTitle:ev}:{})});});
+      toast(eps.length>1?"Série renommée : "+eps.length+" épisodes mis à jour.":"Renommé.");}
+    catch(e){writeErr(e);}};
+  m.querySelector("#rn-ok").onclick=go;[si,ei].forEach(i=>i.onkeydown=e=>{if(e.key==="Enter")go();});
 }
 function cleanupText(){
   const m=modal(`<h3>Retirer un texte</h3><p class="empty">Pour une signature, un en-tête ou un pied de page répété dans le scénario. Le texte est retiré de toutes les scènes, ainsi que les éléments du dépouillement qui en viennent.</p>
