@@ -53,7 +53,7 @@ img{max-width:100%}
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Courier+Prime:wght@400;700&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Permanent+Marker&family=Share+Tech+Mono&family=Courier+Prime:wght@400;700&family=Instrument+Sans:wght@400;500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <style>
@@ -564,6 +564,90 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
 @media (max-width:1150px){.dc-shot{grid-template-columns:150px 270px minmax(0,1fr);grid-template-areas:"id tech act" "id tech snd" "tools tools tools"}.dc-id{grid-area:id}.dc-tech{grid-area:tech}.dc-act{grid-area:act}.dc-snd{grid-area:snd}.dc-tools{grid-area:tools}}
 @media (max-width:760px){.dc-shot{grid-template-columns:1fr;grid-template-areas:"id" "tech" "act" "snd" "tools"}.dc-id{flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px 12px}.dc-id .dc-frame{width:120px}.dc-bar .actions{margin-left:0}}
 @media (prefers-reduced-motion:reduce){.dc-shot.dc-flash{animation:none}}
+/* clap numérique : ardoise noire plein écran, au-dessus de l'app */
+#clap{--cl-slate:#111214;--cl-slate2:#1b1d21;--cl-line:#e9e6df;--cl-chalk:#f4f1ea;--cl-muted:#8b8f97;--cl-led:#ff3b2f;--cl-led-dim:#3a1310;--cl-tag:#f5c518;
+  --cl-f-label:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--cl-f-marker:"Permanent Marker","Marker Felt","Comic Sans MS",cursive;--cl-f-tc:"Share Tech Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  position:fixed;inset:0;z-index:90;display:block;overflow-y:auto;overflow-x:hidden;background:var(--cl-slate);color:var(--cl-chalk);font-family:var(--cl-f-label);color-scheme:dark;
+  padding-top:calc(10px + env(safe-area-inset-top,0px));padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));-webkit-tap-highlight-color:transparent}
+#clap *{box-sizing:border-box}
+#clap button{font:inherit;color:inherit;cursor:pointer}
+#clap :focus-visible{outline:2px solid var(--cl-tag);outline-offset:2px}
+#clap .cl-app{display:flex;flex-direction:column;gap:10px;min-height:100%;max-width:1100px;margin:0 auto}
+#clap .cl-slate{display:flex;flex-direction:column;gap:8px;flex:1;transition:transform .35s ease}
+#clap .cl-slate.tail{transform:rotate(180deg)}
+#clap .cl-clapper{position:relative;height:clamp(54px,11vh,84px);border:0;background:none;padding:0;display:block;width:100%;touch-action:manipulation;flex:none}
+#clap .cl-stick{position:absolute;left:0;right:0;height:46%;border-radius:4px;border:2px solid var(--cl-chalk);background:repeating-linear-gradient(115deg,var(--cl-chalk) 0 34px,var(--cl-slate) 34px 68px)}
+#clap .cl-top{top:0;transform-origin:8px 100%;transform:rotate(-7deg);transition:transform .09s cubic-bezier(.6,0,1,1)}
+#clap .cl-bottom{bottom:0;background:repeating-linear-gradient(65deg,var(--cl-chalk) 0 34px,var(--cl-slate) 34px 68px)}
+#clap .cl-hinge{position:absolute;left:-4px;top:38%;width:18px;height:18px;border-radius:50%;background:var(--cl-muted);border:3px solid var(--cl-slate);z-index:2}
+#clap .cl-clapper.closed .cl-top{transform:rotate(0)}
+#clap .cl-tcbar{display:flex;align-items:center;justify-content:center;gap:12px;background:#000;border:2px solid var(--cl-line);border-radius:6px;padding:6px 10px;position:relative;cursor:pointer;flex:none}
+#clap .cl-tc{font-family:var(--cl-f-tc);font-size:clamp(40px,12vw,108px);line-height:1;color:var(--cl-led);text-shadow:0 0 14px rgba(255,59,47,.55);font-variant-numeric:tabular-nums;letter-spacing:.02em;position:relative;isolation:isolate}
+#clap .cl-ghost{position:absolute;inset:0;color:var(--cl-led-dim);text-shadow:none;z-index:-1}
+#clap .cl-tcmeta{display:flex;flex-direction:column;gap:4px;font-size:12px;letter-spacing:.12em;color:var(--cl-muted);text-transform:uppercase;text-align:right}
+#clap .cl-tcmeta b{color:var(--cl-chalk);font-weight:600}
+#clap .frozen .cl-tc{color:var(--cl-tag);text-shadow:0 0 14px rgba(245,197,24,.5)}
+#clap .cl-flag{position:absolute;left:10px;top:6px;font-size:12px;letter-spacing:.2em;color:var(--cl-tag);opacity:0}
+#clap .frozen .cl-flag{opacity:1}
+#clap .cl-board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:2px solid var(--cl-line);border-radius:6px;flex:1}
+#clap .cl-cell{border-right:2px solid var(--cl-line);border-bottom:2px solid var(--cl-line);padding:6px 10px 4px;display:flex;flex-direction:column;min-width:0;justify-content:space-between}
+#clap .cl-lbl{font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--cl-muted)}
+#clap .cl-cell input{width:100%;min-width:0;background:transparent;border:0;border-radius:0;color:var(--cl-chalk);font-family:var(--cl-f-marker);font-size:clamp(20px,4.2vw,40px);line-height:1.15;padding:2px 0}
+#clap .cl-cell input::placeholder{color:#3d4047}
+#clap .cl-cell input::-webkit-calendar-picker-indicator{display:none!important}
+#clap .s2{grid-column:span 2}#clap .s4{grid-column:span 4}
+#clap .c-r{border-right:0}#clap .c-b{border-bottom:0}
+#clap .cl-big input{font-size:clamp(34px,8vw,76px);text-align:center}
+#clap .cl-row{display:flex;align-items:center;gap:6px}
+#clap .cl-step{flex:none;width:clamp(34px,6vw,48px);height:clamp(34px,6vw,48px);border-radius:50%;border:2px solid var(--cl-line);background:var(--cl-slate2);font-size:22px;line-height:1;display:grid;place-items:center;padding:0}
+#clap .cl-step:active{background:var(--cl-chalk);color:var(--cl-slate)}
+#clap .cl-togs{display:flex;flex-wrap:wrap;gap:6px;padding-top:2px}
+#clap .cl-tog{border:2px solid var(--cl-line);background:transparent;border-radius:4px;padding:4px 10px;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cl-muted)}
+#clap .cl-tog[aria-pressed="true"]{background:var(--cl-chalk);color:var(--cl-slate)}
+#clap .cl-tog.warn[aria-pressed="true"]{background:var(--cl-tag);border-color:var(--cl-tag)}
+#clap .cl-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#clap .cl-sp{flex:1}
+#clap .cl-btn{border:2px solid var(--cl-line);background:var(--cl-slate2);border-radius:6px;padding:9px 14px;font-size:15px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+#clap .cl-btn.primary{background:var(--cl-led);border-color:var(--cl-led);color:#fff}
+#clap .cl-tools select{background:var(--cl-slate2);color:var(--cl-chalk);border:2px solid var(--cl-line);border-radius:6px;padding:8px 10px;font:600 15px var(--cl-f-label)}
+#clap .cl-st{font-size:12px;letter-spacing:.12em;color:var(--cl-muted);text-transform:uppercase}
+#clap .cl-log{border:2px solid var(--cl-slate2);border-radius:6px;padding:10px 12px}
+#clap .cl-log h2{margin:0 0 6px;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--cl-muted);display:flex;gap:8px;align-items:center;font-family:var(--cl-f-label)}
+#clap .cl-log ol{list-style:none;margin:0;padding:0;max-height:180px;overflow:auto;font-family:var(--cl-f-tc);font-size:15px;font-variant-numeric:tabular-nums}
+#clap .cl-log li{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:5px 0;border-top:1px solid var(--cl-slate2)}
+#clap .cl-log li:first-child{border-top:0}
+#clap .cl-log .k{color:var(--cl-led)}#clap .cl-log .f{color:var(--cl-muted)}
+#clap .cl-log li.cl-empty{display:block;color:var(--cl-muted);font-family:var(--cl-f-label);font-size:15px}
+#clap .cl-mini{border:1px solid var(--cl-muted);background:none;border-radius:4px;padding:3px 8px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cl-chalk)}
+#clap textarea.cl-copy{width:100%;height:80px;margin-top:8px;background:#000;color:var(--cl-chalk);border:1px solid var(--cl-muted);font-family:var(--cl-f-tc)}
+#clap .cl-flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:2}
+#clap .cl-flash.on{opacity:1}
+#clap:focus{outline:none}
+#clap .cl-x{position:fixed;z-index:3;top:calc(6px + env(safe-area-inset-top,0px));right:max(6px,env(safe-area-inset-right,0px));width:38px;height:38px;border-radius:50%;border:2px solid var(--cl-line);background:rgba(17,18,20,.88);color:var(--cl-chalk);font-size:24px;line-height:1;display:grid;place-items:center;padding:0}
+@media (max-width:640px) and (orientation:portrait){
+  #clap .cl-board{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #clap .s4{grid-column:span 2}
+  #clap .p-r{border-right:0}#clap .p-nb{border-bottom:2px solid var(--cl-line)}
+  #clap .cl-tcmeta{display:none}
+}
+@media (orientation:landscape) and (max-height:560px){
+  #clap{padding-top:calc(6px + env(safe-area-inset-top,0px));padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+  #clap .cl-slate{height:calc(100vh - 12px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));height:calc(100dvh - 12px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));flex:none;gap:5px;min-height:0}
+  #clap .cl-clapper{height:9vh;height:9dvh;min-height:28px}
+  #clap .cl-top{transform:rotate(-5deg)}
+  #clap .cl-tcbar{padding:2px 10px}
+  #clap .cl-tc{font-size:min(16vh,11vw);font-size:min(16dvh,11vw)}
+  #clap .cl-board{min-height:0;grid-template-rows:1fr 1.5fr 1fr 1fr}
+  #clap .cl-cell{padding:2px 8px;min-height:0;overflow:hidden;justify-content:center}
+  #clap .cl-lbl{font-size:min(11px,2.8vh);line-height:1.1}
+  #clap .cl-cell input{font-size:min(30px,6.5vh);font-size:min(30px,6.5dvh);padding:0;line-height:1.1}
+  #clap .cl-big input{font-size:min(56px,11vh);font-size:min(56px,11dvh)}
+  #clap .cl-step{width:min(40px,8vh);height:min(40px,8vh);font-size:18px}
+  #clap .cl-togs{gap:4px;padding-top:0}
+  #clap .cl-tog{padding:1px 8px;font-size:min(14px,3.6vh)}
+}
+@media (prefers-reduced-motion:reduce){#clap .cl-top,#clap .cl-slate{transition:none}}
 </style>
 
 <header class="top" id="top">
@@ -571,6 +655,7 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
   <div class="spacer"></div>
   <div class="progress" id="progress" hidden></div>
   <div class="peers" id="peers" aria-label="Personnes connectées"></div>
+  <button class="menubtn" id="b-clap" type="button" aria-label="Clap numérique" title="Clap numérique"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 10 3.4 6.8a1 1 0 0 1 .8-1.2l13.6-2.5a1 1 0 0 1 1.2.8L19.6 7z"/><path d="M8.6 5 10.3 8.4M13.5 4.1l1.7 3.4"/></svg></button>
   <button class="menubtn" id="b-menu" type="button" aria-label="Menu" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
 </header>
 <div class="projbar" id="proj" hidden></div>
@@ -584,6 +669,52 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
 <main class="desk" id="desk">
   <div class="welcome" id="loading"><div class="welcome-card"><p>Chargement des projets…</p></div></div>
 </main>
+
+<div id="clap" hidden tabindex="-1" role="dialog" aria-modal="true" aria-label="Clap numérique">
+  <button class="cl-x" id="cl-x" type="button" aria-label="Fermer le clap">×</button>
+  <div class="cl-app">
+    <div class="cl-slate" id="cl-slate">
+      <button class="cl-clapper" id="cl-clapper" type="button" aria-label="Claquer"><span class="cl-stick cl-top"></span><span class="cl-stick cl-bottom"></span><span class="cl-hinge"></span></button>
+      <div class="cl-tcbar" id="cl-tcbar" role="button" tabindex="0" aria-label="Timecode, toucher pour claquer">
+        <span class="cl-flag">● CLAP</span>
+        <div class="cl-tc"><span id="cl-tc">00:00:00:00</span><span class="cl-ghost" aria-hidden="true">88:88:88:88</span></div>
+        <div class="cl-tcmeta"><span><b id="cl-fpslbl">25</b> IPS</span><span>TOD · ND</span></div>
+      </div>
+      <div class="cl-board">
+        <div class="cl-cell s4 c-r p-r"><label class="cl-lbl" for="cl-prod">Production</label><input id="cl-prod" placeholder="Titre du film" autocomplete="off"></div>
+        <div class="cl-cell cl-big"><label class="cl-lbl" for="cl-roll">Roll</label><input id="cl-roll" placeholder="A001" autocomplete="off"></div>
+        <div class="cl-cell cl-big p-r"><label class="cl-lbl" for="cl-scene">Scène</label><input id="cl-scene" list="cl-scenes" placeholder="1" autocomplete="off"></div>
+        <div class="cl-cell cl-big"><label class="cl-lbl" for="cl-plan">Plan</label><input id="cl-plan" list="cl-plans" placeholder="1" autocomplete="off"></div>
+        <div class="cl-cell cl-big c-r p-r"><span class="cl-lbl">Prise</span>
+          <div class="cl-row"><button class="cl-step" id="cl-tminus" type="button" aria-label="Prise précédente">−</button><input id="cl-take" inputmode="numeric" placeholder="1" autocomplete="off" aria-label="Prise"><button class="cl-step" id="cl-tplus" type="button" aria-label="Prise suivante">+</button></div></div>
+        <div class="cl-cell s2 p-r"><label class="cl-lbl" for="cl-dir">Réalisateur</label><input id="cl-dir" placeholder="Nom" autocomplete="off"></div>
+        <div class="cl-cell s2 c-r"><label class="cl-lbl" for="cl-dop">Chef opérateur</label><input id="cl-dop" placeholder="Nom" autocomplete="off"></div>
+        <div class="cl-cell c-b p-nb"><label class="cl-lbl" for="cl-cam">Caméra</label><input id="cl-cam" placeholder="A" autocomplete="off"></div>
+        <div class="cl-cell c-b p-r p-nb"><span class="cl-lbl">Date</span><input id="cl-date" readonly tabindex="-1" aria-label="Date du jour"></div>
+        <div class="cl-cell s2 c-r c-b"><span class="cl-lbl">Infos</span>
+          <div class="cl-togs"><button class="cl-tog" id="cl-ie" type="button" aria-pressed="true">Int</button><button class="cl-tog" id="cl-dn" type="button" aria-pressed="true">Jour</button><button class="cl-tog warn" id="cl-mos" type="button" aria-pressed="false">MOS</button><button class="cl-tog warn" id="cl-tail" type="button" aria-pressed="false">Queue</button></div></div>
+      </div>
+    </div>
+    <div class="cl-tools">
+      <button class="cl-btn primary" id="cl-go" type="button">Claquer</button>
+      <select id="cl-fps" aria-label="Cadence"><option value="23.976">23.976</option><option value="24">24</option><option value="25" selected>25</option><option value="29.97">29.97</option><option value="30">30</option><option value="50">50</option></select>
+      <label class="cl-st"><input type="checkbox" id="cl-beep" checked> Bip</label>
+      <button class="cl-btn" id="cl-test" type="button">Tester le son</button>
+      <span class="cl-st" id="cl-audio">Son : touche l’écran</span>
+      <span class="cl-st" id="cl-remote">Déclencheur : écran</span>
+      <span class="cl-sp"></span>
+      <button class="cl-btn" id="cl-fs" type="button">Plein écran</button>
+      <button class="cl-btn" id="cl-close" type="button">Fermer</button>
+    </div>
+    <section class="cl-log" aria-label="Journal des claps">
+      <h2>Journal <span class="cl-sp"></span><button class="cl-mini" id="cl-copylog" type="button">Copier CSV</button><button class="cl-mini" id="cl-clearlog" type="button">Vider</button></h2>
+      <ol id="cl-list"></ol>
+      <textarea class="cl-copy" id="cl-copybox" hidden readonly aria-label="CSV du journal"></textarea>
+    </section>
+  </div>
+  <div class="cl-flash" id="cl-flash"></div>
+  <datalist id="cl-scenes"></datalist><datalist id="cl-plans"></datalist>
+</div>
 
 <script>
 "use strict";
@@ -604,8 +735,8 @@ const CATS=[
  {id:"equipment",label:"Matériel spécial",color:"#5d6b7a"},
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
-/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés */
-const APP_VERSION="1.6.0";const APP_DATE="29 oct. 2026";
+/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique */
+const APP_VERSION="1.7.0";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -2875,6 +3006,165 @@ document.addEventListener("keydown",e=>{
 
 boot();
 </script>
+<script>
+/* ---------- clap numérique (bouton à côté du menu) ---------- */
+(function(){
+  "use strict";
+  const g=id=>document.getElementById(id);
+  const box=g("clap");if(!box)return;
+  const K=k=>"upsb.clap."+k;
+  const get=(k,d)=>{try{const v=localStorage.getItem(K(k));return v==null?d:JSON.parse(v);}catch(e){return d;}};
+  const put=(k,v)=>{try{localStorage.setItem(K(k),JSON.stringify(v));}catch(e){}};
+  const cur=()=>{try{return typeof P==="function"?P():null;}catch(e){return null;}};
+
+  /* champs */
+  const F=["prod","roll","scene","plan","take","dir","dop","cam"];
+  const DEF={prod:"",roll:"A001",scene:"1",plan:"1",take:"1",dir:"",dop:"",cam:"A"};
+  F.forEach(f=>{const el=g("cl-"+f);el.value=get(f,DEF[f]);el.addEventListener("input",()=>put(f,el.value));});
+  const setTake=n=>{n=Math.max(1,n|0);g("cl-take").value=n;put("take",String(n));};
+  g("cl-tplus").onclick=()=>setTake((parseInt(g("cl-take").value)||0)+1);
+  g("cl-tminus").onclick=()=>setTake((parseInt(g("cl-take").value)||2)-1);
+  /* nouveau plan ou nouvelle scène : on repart à la prise 1 */
+  g("cl-scene").addEventListener("change",()=>{fillPlans();setTake(1);});
+  g("cl-plan").addEventListener("change",()=>setTake(1));
+  const today=()=>{const d=new Date();return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+String(d.getFullYear()).slice(2);};
+
+  /* bascules */
+  const PAIRS={"cl-ie":["Int","Ext"],"cl-dn":["Jour","Nuit"]};
+  const paintPair=(id,i)=>{const b=g(id);b.textContent=PAIRS[id][i];b.setAttribute("aria-pressed",i===0?"true":"false");b.dataset.i=i;};
+  Object.keys(PAIRS).forEach(id=>{paintPair(id,get(id,0));g(id).onclick=()=>{const i=1-(+g(id).dataset.i||0);put(id,i);paintPair(id,i);};});
+  const paintOn=(id,on)=>{g(id).setAttribute("aria-pressed",on?"true":"false");if(id==="cl-tail")g("cl-slate").classList.toggle("tail",on);};
+  ["cl-mos","cl-tail"].forEach(id=>{paintOn(id,get(id,false));g(id).onclick=()=>{const on=g(id).getAttribute("aria-pressed")!=="true";put(id,on);paintOn(id,on);};});
+  const isOn=id=>g(id).getAttribute("aria-pressed")==="true";
+
+  /* lien avec le projet : titre, scène en cours, plans du découpage */
+  function sceneByNum(n){try{return S.scenes.find(s=>String(s.num)===String(n).trim())||null;}catch(e){return null;}}
+  function fillScenes(){const dl=g("cl-scenes");dl.innerHTML="";
+    try{for(const s of S.scenes){const o=document.createElement("option");o.value=s.num;o.label=s.location||s.heading||"";dl.append(o);}}catch(e){}}
+  function fillPlans(){const dl=g("cl-plans");dl.innerHTML="";const s=sceneByNum(g("cl-scene").value);if(!s)return;
+    try{shotsOf(s.id).forEach((x,i)=>{const o=document.createElement("option");o.value=String(i+1);o.label=[SHOT_T[x.type]||x.type,x.move].filter(Boolean).join(" · ");dl.append(o);});}catch(e){}}
+  function syncProject(){
+    const p=cur();
+    if(p){g("cl-prod").value=p.name||"";put("prod",g("cl-prod").value);
+      const s=S.sid&&typeof scene==="function"?scene(S.sid):null;const key=p.id+"|"+(s?s.id:"");
+      if(s&&get("auto","")!==key){g("cl-scene").value=s.num;put("scene",s.num);g("cl-plan").value="1";put("plan","1");setTake(1);put("auto",key);
+        const dn=s.dayNight==="N"?1:s.dayNight==="J"?0:null;if(dn!==null){paintPair("cl-dn",dn);put("cl-dn",dn);}
+        const ie=s.intExt==="EXT"?1:s.intExt==="INT"?0:null;if(ie!==null){paintPair("cl-ie",ie);put("cl-ie",ie);}}}
+    fillScenes();fillPlans();
+  }
+
+  /* timecode heure du jour, non drop */
+  const fpsSel=g("cl-fps");fpsSel.value=get("fps","25");
+  const nominal=()=>Math.round(parseFloat(fpsSel.value)||25);
+  const paintFps=()=>{g("cl-fpslbl").textContent=fpsSel.value;};paintFps();
+  fpsSel.onchange=()=>{put("fps",fpsSel.value);paintFps();};
+  const p2=n=>String(n).padStart(2,"0");
+  const tcAt=t=>{const d=new Date(t);const f=Math.min(nominal()-1,Math.floor(d.getMilliseconds()/1000*nominal()));return p2(d.getHours())+":"+p2(d.getMinutes())+":"+p2(d.getSeconds())+":"+p2(f);};
+  const tcEl=g("cl-tc");let frozenUntil=0,last="",raf=0;
+  function tick(){const now=Date.now();if(now>=frozenUntil){g("cl-tcbar").classList.remove("frozen");const s=tcAt(now);if(s!==last){tcEl.textContent=s;last=s;}}raf=requestAnimationFrame(tick);}
+
+  /* son : claquement + bip 1 kHz */
+  try{if(navigator.audioSession)navigator.audioSession.type="playback";}catch(e){}
+  let ac=null,noise=null,unlocked=false,silentEl=null;
+  function silentWav(){const n=800,b=new ArrayBuffer(44+n*2),v=new DataView(b);const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+    w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+    v.setUint32(24,8000,true);v.setUint32(28,16000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+    return URL.createObjectURL(new Blob([b],{type:"audio/wav"}));}
+  function ctx(){if(!ac){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ac=new C({latencyHint:"interactive"});
+      const len=Math.floor(ac.sampleRate*0.08);noise=ac.createBuffer(1,len,ac.sampleRate);const ch=noise.getChannelData(0);for(let i=0;i<len;i++)ch[i]=(Math.random()*2-1)*Math.pow(1-i/len,5);}
+    return ac;}
+  const audioStatus=()=>{g("cl-audio").textContent=ac&&ac.state==="running"?"Son : prêt":"Son : touche l’écran";};
+  function unlock(){if(box.hidden)return;const c=ctx();if(!c)return;
+    try{if(!silentEl){silentEl=new Audio(silentWav());silentEl.setAttribute("playsinline","");}const pr=silentEl.play();if(pr&&pr.catch)pr.catch(()=>{});}catch(e){}
+    c.resume().then(()=>{if(!unlocked){const s=c.createBufferSource();s.buffer=c.createBuffer(1,1,22050);s.connect(c.destination);s.start(0);unlocked=true;}audioStatus();}).catch(audioStatus);}
+  ["pointerdown","touchend","keydown"].forEach(ev=>box.addEventListener(ev,unlock,{passive:true}));
+  function play(c){const t=c.currentTime+0.005;
+    const src=c.createBufferSource();src.buffer=noise;src.connect(c.destination);src.start(t);
+    if(g("cl-beep").checked){const o=c.createOscillator(),og=c.createGain();o.type="sine";o.frequency.value=1000;
+      og.gain.setValueAtTime(0,t);og.gain.linearRampToValueAtTime(0.9,t+0.002);og.gain.setValueAtTime(0.9,t+0.25);og.gain.linearRampToValueAtTime(0,t+0.27);
+      o.connect(og).connect(c.destination);o.start(t);o.stop(t+0.3);}}
+  function sound(){const c=ctx();if(!c)return;try{if(c.state==="running")play(c);else c.resume().then(()=>{play(c);audioStatus();}).catch(()=>{});}catch(e){}}
+  g("cl-test").onclick=()=>{unlock();sound();};
+
+  /* journal, un par projet, gardé sur cet appareil */
+  const logKey=()=>"log."+((typeof S!=="undefined"&&S.pid)||"libre");
+  let log=[];
+  function renderLog(){const ol=g("cl-list");ol.innerHTML="";
+    if(!log.length){const li=document.createElement("li");li.className="cl-empty";li.textContent="Aucun clap pour l’instant. Touche la claquette ou le timecode pour marquer une prise.";ol.append(li);return;}
+    log.slice().reverse().forEach(e=>{const li=document.createElement("li");
+      const a=document.createElement("span");a.className="k";a.textContent=e.tc;
+      const b=document.createElement("span");b.textContent="S"+e.scene+" · P"+e.plan+" · T"+e.take+" · "+e.cam+" / "+e.roll;
+      const c=document.createElement("span");c.className="f";c.textContent=[e.mos?"MOS":"",e.tail?"QUEUE":""].filter(Boolean).join(" ")||e.fps;
+      li.append(a,b,c);ol.append(li);});}
+  function csv(){const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+    const head=["date","timecode","ips","production","scene","plan","prise","camera","roll","int_ext","jour_nuit","mos","queue"];
+    return[head.join(";")].concat(log.map(e=>[e.date,e.tc,e.fps,e.prod,e.scene,e.plan,e.take,e.cam,e.roll,e.ie,e.dn,e.mos?1:0,e.tail?1:0].map(q).join(";"))).join("\n");}
+  g("cl-copylog").onclick=()=>{const text=csv(),tb=g("cl-copybox"),btn=g("cl-copylog");
+    const fb=()=>{tb.hidden=false;tb.value=text;tb.focus();tb.select();btn.textContent="Sélectionné";};
+    try{navigator.clipboard.writeText(text).then(()=>{btn.textContent="Copié";setTimeout(()=>btn.textContent="Copier CSV",1500);},fb);}catch(e){fb();}};
+  let armed=false;
+  g("cl-clearlog").onclick=()=>{const b=g("cl-clearlog");
+    if(!armed){armed=true;b.textContent="Confirmer ?";setTimeout(()=>{armed=false;b.textContent="Vider";},2500);return;}
+    log=[];put(logKey(),log);renderLog();armed=false;b.textContent="Vider";g("cl-copybox").hidden=true;};
+
+  /* claquer */
+  const clapper=g("cl-clapper"),flash=g("cl-flash");let busy=false;
+  function clap(){
+    if(busy||box.hidden)return;busy=true;
+    const t=Date.now(),code=tcAt(t);
+    clapper.classList.add("closed");sound();
+    flash.classList.add("on");setTimeout(()=>flash.classList.remove("on"),Math.max(40,2000/nominal()));
+    tcEl.textContent=code;last="";frozenUntil=t+1500;g("cl-tcbar").classList.add("frozen");
+    log.push({tc:code,fps:fpsSel.value,date:g("cl-date").value,prod:g("cl-prod").value,scene:g("cl-scene").value,plan:g("cl-plan").value,take:g("cl-take").value,cam:g("cl-cam").value,roll:g("cl-roll").value,ie:g("cl-ie").textContent,dn:g("cl-dn").textContent,mos:isOn("cl-mos"),tail:isOn("cl-tail")});
+    if(log.length>500)log=log.slice(-500);put(logKey(),log);renderLog();
+    try{if(navigator.vibrate)navigator.vibrate(30);}catch(e){}
+    setTimeout(()=>{clapper.classList.remove("closed");busy=false;},600);
+  }
+  clapper.onclick=clap;g("cl-go").onclick=clap;g("cl-tcbar").onclick=clap;
+
+  /* touches : télécommande Bluetooth, pointeur de présentation, clavier (et volume quand le système le transmet) */
+  const KEYS=new Set(["AudioVolumeUp","AudioVolumeDown","VolumeUp","VolumeDown","Enter"," ","Spacebar","PageDown","PageUp","ArrowRight","ArrowDown","MediaPlayPause","MediaTrackNext","Camera"]);
+  const CODES=new Set([24,25,174,175,13,32,33,34]);
+  window.addEventListener("keydown",e=>{
+    if(box.hidden)return;
+    if(e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();close();return;}
+    const tag=(e.target&&e.target.tagName)||"";
+    if(/^(INPUT|TEXTAREA|SELECT)$/.test(tag))return;
+    if(tag==="BUTTON"&&(e.key==="Enter"||e.key===" "))return;
+    if(!(KEYS.has(e.key)||CODES.has(e.keyCode)))return;
+    e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;
+    clap();g("cl-remote").textContent="Déclencheur : "+(e.key&&e.key!==" "?e.key:"Espace");
+  },true);
+
+  /* écran allumé + plein écran */
+  let lock=null;
+  async function keepAwake(){if(lock||box.hidden||!("wakeLock" in navigator))return;
+    try{lock=await navigator.wakeLock.request("screen");lock.addEventListener("release",()=>{lock=null;});}catch(e){}}
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")keepAwake();});
+  g("cl-fs").onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await box.requestFullscreen();}catch(e){g("cl-fs").textContent="Indisponible ici";}};
+
+  /* ouvrir / fermer */
+  function open(){
+    syncProject();g("cl-date").value=today();
+    log=get(logKey(),[]);renderLog();
+    box.hidden=false;document.documentElement.style.overflow="hidden";
+    if(!raf)raf=requestAnimationFrame(tick);
+    box.scrollTop=0;unlock();keepAwake();box.focus({preventScroll:true});
+  }
+  function close(){
+    box.hidden=true;document.documentElement.style.overflow="";
+    if(raf){cancelAnimationFrame(raf);raf=0;}
+    if(lock){try{lock.release();}catch(e){}lock=null;}
+    if(document.fullscreenElement===box){try{document.exitFullscreen();}catch(e){}}
+    const b=g("b-clap");if(b)b.focus();
+  }
+  g("cl-close").onclick=close;g("cl-x").onclick=close;
+  /* après un toucher, on rend le focus à l'ardoise : la touche Entrée d'une télécommande ne réactive pas le dernier bouton */
+  box.addEventListener("pointerup",e=>{const b=e.target.closest&&e.target.closest("button");if(b)setTimeout(()=>{if(document.activeElement===b)box.focus({preventScroll:true});},0);});
+  const btn=g("b-clap");if(btn)btn.onclick=open;
+})();
+</script>
+
 
 </body>
 </html>
