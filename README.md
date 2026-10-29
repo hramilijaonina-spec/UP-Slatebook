@@ -7,8 +7,10 @@ Dépouillement de scénario et plan de travail collaboratifs pour l'équipe UP. 
 - Import PDF, Final Draft (.fdx), .sbx, Fountain ou texte ; découpage en scènes (INT/EXT, jour/nuit, huitièmes de page) ; retrait automatique des en-têtes et pieds de page répétés.
 - Éditeur de scénario : mise en page standard (en-tête, action, personnage, didascalie, dialogue, transition, plan), Entrée/Tab, raccourcis, autocomplétion des personnages et décors, verrou par scène pendant l'écriture, export Final Draft et Fountain, impression PDF.
 - Dépouillement par IA (Claude, via clé API Anthropic) dans 13 catégories, correction à la main, commentaires par scène.
+- Découpage technique plan par plan, scène par scène : type de plan avec vignette de cadre, mouvement, angle, effet, durée, action, son, notes ; « Découper avec l'IA » propose les plans, tout reste modifiable ; vignettes photo (prise sur place ou importée) ; aperçu en tableau avec export CSV.
+- Scénario à plusieurs épisodes : chaque épisode devient un projet, regroupés en série (ligne « Projet en cours » avec les épisodes).
 - Plan de travail : lieux de tournage, journées en glisser-déposer, plan proposé automatiquement, alertes (journée chargée, déplacements, rôles éclatés).
-- Exports : fiches de dépouillement et plan de travail (HTML imprimable, CSV).
+- Exports (menu ☰ → Exporter) : fiches de dépouillement, plan de travail (HTML imprimable, CSV), découpage technique (CSV). Les rapports d'éléments sont dans le Plan de travail → Rapports.
 - Temps réel pour toute l'équipe ; connexion avec Google ou par lien e-mail (toute adresse, sans mot de passe).
 - Hors ligne : l'app s'ouvre sans réseau, les modifications sont gardées sur l'appareil et envoyées au retour de la connexion.
 - Sauvegarde : menu ••• du projet → « Sauvegarder le projet (fichier) » ; restauration dans un nouveau projet.
