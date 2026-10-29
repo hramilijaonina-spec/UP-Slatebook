@@ -648,6 +648,18 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
   #clap .cl-tog{padding:1px 8px;font-size:min(14px,3.6vh)}
 }
 @media (prefers-reduced-motion:reduce){#clap .cl-top,#clap .cl-slate{transition:none}}
+/* grille du clap : traits par l'espacement, zones nommées */
+#clap .cl-board{gap:2px;background:var(--cl-line);overflow:hidden;
+  grid-template-areas:"prod prod prod date" "roll scene plan take" "dir dir dop dop" "cam son info info"}
+#clap .cl-cell{border:0;background:var(--cl-slate)}
+#clap .a-prod{grid-area:prod}#clap .a-date{grid-area:date}#clap .a-roll{grid-area:roll}#clap .a-scene{grid-area:scene}#clap .a-plan{grid-area:plan}#clap .a-take{grid-area:take}
+#clap .a-dir{grid-area:dir}#clap .a-dop{grid-area:dop}#clap .a-cam{grid-area:cam}#clap .a-son{grid-area:son}#clap .a-info{grid-area:info}
+#clap .a-son input{color:#9fd8ff}
+#clap.mos .a-son input{text-decoration:line-through;opacity:.5}
+@media (max-width:640px) and (orientation:portrait){
+  #clap .cl-board{grid-template-areas:"prod prod" "roll scene" "plan take" "dir dir" "dop dop" "cam son" "date info"}
+  #clap .cl-flag{display:none}
+}
 </style>
 
 <header class="top" id="top">
@@ -681,17 +693,18 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
         <div class="cl-tcmeta"><span><b id="cl-fpslbl">25</b> IPS</span><span>TOD · ND</span></div>
       </div>
       <div class="cl-board">
-        <div class="cl-cell s4 c-r p-r"><label class="cl-lbl" for="cl-prod">Production</label><input id="cl-prod" placeholder="Titre du film" autocomplete="off"></div>
-        <div class="cl-cell cl-big"><label class="cl-lbl" for="cl-roll">Roll</label><input id="cl-roll" placeholder="A001" autocomplete="off"></div>
-        <div class="cl-cell cl-big p-r"><label class="cl-lbl" for="cl-scene">Scène</label><input id="cl-scene" list="cl-scenes" placeholder="1" autocomplete="off"></div>
-        <div class="cl-cell cl-big"><label class="cl-lbl" for="cl-plan">Plan</label><input id="cl-plan" list="cl-plans" placeholder="1" autocomplete="off"></div>
-        <div class="cl-cell cl-big c-r p-r"><span class="cl-lbl">Prise</span>
+        <div class="cl-cell a-prod"><label class="cl-lbl" for="cl-prod">Production</label><input id="cl-prod" placeholder="Titre du film" autocomplete="off"></div>
+        <div class="cl-cell a-date"><span class="cl-lbl">Date</span><input id="cl-date" readonly tabindex="-1" aria-label="Date du jour"></div>
+        <div class="cl-cell cl-big a-roll"><label class="cl-lbl" for="cl-roll">Roll</label><input id="cl-roll" placeholder="A001" autocomplete="off"></div>
+        <div class="cl-cell cl-big a-scene"><label class="cl-lbl" for="cl-scene">Scène</label><input id="cl-scene" list="cl-scenes" placeholder="1" autocomplete="off"></div>
+        <div class="cl-cell cl-big a-plan"><label class="cl-lbl" for="cl-plan">Plan</label><input id="cl-plan" list="cl-plans" placeholder="1" autocomplete="off"></div>
+        <div class="cl-cell cl-big a-take"><span class="cl-lbl">Prise</span>
           <div class="cl-row"><button class="cl-step" id="cl-tminus" type="button" aria-label="Prise précédente">−</button><input id="cl-take" inputmode="numeric" placeholder="1" autocomplete="off" aria-label="Prise"><button class="cl-step" id="cl-tplus" type="button" aria-label="Prise suivante">+</button></div></div>
-        <div class="cl-cell s2 p-r"><label class="cl-lbl" for="cl-dir">Réalisateur</label><input id="cl-dir" placeholder="Nom" autocomplete="off"></div>
-        <div class="cl-cell s2 c-r"><label class="cl-lbl" for="cl-dop">Chef opérateur</label><input id="cl-dop" placeholder="Nom" autocomplete="off"></div>
-        <div class="cl-cell c-b p-nb"><label class="cl-lbl" for="cl-cam">Caméra</label><input id="cl-cam" placeholder="A" autocomplete="off"></div>
-        <div class="cl-cell c-b p-r p-nb"><span class="cl-lbl">Date</span><input id="cl-date" readonly tabindex="-1" aria-label="Date du jour"></div>
-        <div class="cl-cell s2 c-r c-b"><span class="cl-lbl">Infos</span>
+        <div class="cl-cell a-dir"><label class="cl-lbl" for="cl-dir">Réalisateur</label><input id="cl-dir" placeholder="Nom" autocomplete="off"></div>
+        <div class="cl-cell a-dop"><label class="cl-lbl" for="cl-dop">Chef opérateur</label><input id="cl-dop" placeholder="Nom" autocomplete="off"></div>
+        <div class="cl-cell a-cam"><label class="cl-lbl" for="cl-cam">Caméra</label><input id="cl-cam" placeholder="A" autocomplete="off"></div>
+        <div class="cl-cell a-son"><label class="cl-lbl" for="cl-son">Son</label><input id="cl-son" placeholder="S001" autocomplete="off"></div>
+        <div class="cl-cell a-info"><span class="cl-lbl">Infos</span>
           <div class="cl-togs"><button class="cl-tog" id="cl-ie" type="button" aria-pressed="true">Int</button><button class="cl-tog" id="cl-dn" type="button" aria-pressed="true">Jour</button><button class="cl-tog warn" id="cl-mos" type="button" aria-pressed="false">MOS</button><button class="cl-tog warn" id="cl-tail" type="button" aria-pressed="false">Queue</button></div></div>
       </div>
     </div>
@@ -735,8 +748,8 @@ const CATS=[
  {id:"equipment",label:"Matériel spécial",color:"#5d6b7a"},
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
-/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique */
-const APP_VERSION="1.7.0";const APP_DATE="29 oct. 2026";
+/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap */
+const APP_VERSION="1.7.1";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -3018,8 +3031,8 @@ boot();
   const cur=()=>{try{return typeof P==="function"?P():null;}catch(e){return null;}};
 
   /* champs */
-  const F=["prod","roll","scene","plan","take","dir","dop","cam"];
-  const DEF={prod:"",roll:"A001",scene:"1",plan:"1",take:"1",dir:"",dop:"",cam:"A"};
+  const F=["prod","roll","scene","plan","take","dir","dop","cam","son"];
+  const DEF={prod:"",roll:"A001",scene:"1",plan:"1",take:"1",dir:"",dop:"",cam:"A",son:""};
   F.forEach(f=>{const el=g("cl-"+f);el.value=get(f,DEF[f]);el.addEventListener("input",()=>put(f,el.value));});
   const setTake=n=>{n=Math.max(1,n|0);g("cl-take").value=n;put("take",String(n));};
   g("cl-tplus").onclick=()=>setTake((parseInt(g("cl-take").value)||0)+1);
@@ -3033,7 +3046,7 @@ boot();
   const PAIRS={"cl-ie":["Int","Ext"],"cl-dn":["Jour","Nuit"]};
   const paintPair=(id,i)=>{const b=g(id);b.textContent=PAIRS[id][i];b.setAttribute("aria-pressed",i===0?"true":"false");b.dataset.i=i;};
   Object.keys(PAIRS).forEach(id=>{paintPair(id,get(id,0));g(id).onclick=()=>{const i=1-(+g(id).dataset.i||0);put(id,i);paintPair(id,i);};});
-  const paintOn=(id,on)=>{g(id).setAttribute("aria-pressed",on?"true":"false");if(id==="cl-tail")g("cl-slate").classList.toggle("tail",on);};
+  const paintOn=(id,on)=>{g(id).setAttribute("aria-pressed",on?"true":"false");if(id==="cl-tail")g("cl-slate").classList.toggle("tail",on);if(id==="cl-mos")box.classList.toggle("mos",on);};
   ["cl-mos","cl-tail"].forEach(id=>{paintOn(id,get(id,false));g(id).onclick=()=>{const on=g(id).getAttribute("aria-pressed")!=="true";put(id,on);paintOn(id,on);};});
   const isOn=id=>g(id).getAttribute("aria-pressed")==="true";
 
@@ -3093,12 +3106,12 @@ boot();
     if(!log.length){const li=document.createElement("li");li.className="cl-empty";li.textContent="Aucun clap pour l’instant. Touche la claquette ou le timecode pour marquer une prise.";ol.append(li);return;}
     log.slice().reverse().forEach(e=>{const li=document.createElement("li");
       const a=document.createElement("span");a.className="k";a.textContent=e.tc;
-      const b=document.createElement("span");b.textContent="S"+e.scene+" · P"+e.plan+" · T"+e.take+" · "+e.cam+" / "+e.roll;
+      const b=document.createElement("span");b.textContent="S"+e.scene+" · P"+e.plan+" · T"+e.take+" · "+e.cam+" / "+e.roll+(e.son&&!e.mos?" · son "+e.son:"");
       const c=document.createElement("span");c.className="f";c.textContent=[e.mos?"MOS":"",e.tail?"QUEUE":""].filter(Boolean).join(" ")||e.fps;
       li.append(a,b,c);ol.append(li);});}
   function csv(){const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-    const head=["date","timecode","ips","production","scene","plan","prise","camera","roll","int_ext","jour_nuit","mos","queue"];
-    return[head.join(";")].concat(log.map(e=>[e.date,e.tc,e.fps,e.prod,e.scene,e.plan,e.take,e.cam,e.roll,e.ie,e.dn,e.mos?1:0,e.tail?1:0].map(q).join(";"))).join("\n");}
+    const head=["date","timecode","ips","production","scene","plan","prise","camera","roll","son","int_ext","jour_nuit","mos","queue"];
+    return[head.join(";")].concat(log.map(e=>[e.date,e.tc,e.fps,e.prod,e.scene,e.plan,e.take,e.cam,e.roll,e.son||"",e.ie,e.dn,e.mos?1:0,e.tail?1:0].map(q).join(";"))).join("\n");}
   g("cl-copylog").onclick=()=>{const text=csv(),tb=g("cl-copybox"),btn=g("cl-copylog");
     const fb=()=>{tb.hidden=false;tb.value=text;tb.focus();tb.select();btn.textContent="Sélectionné";};
     try{navigator.clipboard.writeText(text).then(()=>{btn.textContent="Copié";setTimeout(()=>btn.textContent="Copier CSV",1500);},fb);}catch(e){fb();}};
@@ -3115,7 +3128,7 @@ boot();
     clapper.classList.add("closed");sound();
     flash.classList.add("on");setTimeout(()=>flash.classList.remove("on"),Math.max(40,2000/nominal()));
     tcEl.textContent=code;last="";frozenUntil=t+1500;g("cl-tcbar").classList.add("frozen");
-    log.push({tc:code,fps:fpsSel.value,date:g("cl-date").value,prod:g("cl-prod").value,scene:g("cl-scene").value,plan:g("cl-plan").value,take:g("cl-take").value,cam:g("cl-cam").value,roll:g("cl-roll").value,ie:g("cl-ie").textContent,dn:g("cl-dn").textContent,mos:isOn("cl-mos"),tail:isOn("cl-tail")});
+    log.push({tc:code,fps:fpsSel.value,date:g("cl-date").value,prod:g("cl-prod").value,scene:g("cl-scene").value,plan:g("cl-plan").value,take:g("cl-take").value,cam:g("cl-cam").value,roll:g("cl-roll").value,son:g("cl-son").value,ie:g("cl-ie").textContent,dn:g("cl-dn").textContent,mos:isOn("cl-mos"),tail:isOn("cl-tail")});
     if(log.length>500)log=log.slice(-500);put(logKey(),log);renderLog();
     try{if(navigator.vibrate)navigator.vibrate(30);}catch(e){}
     setTimeout(()=>{clapper.classList.remove("closed");busy=false;},600);
