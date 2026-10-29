@@ -1,8 +1,9 @@
 /* UP Slatebook — service worker : l'app s'ouvre même sans réseau. */
 const APP = "up";                       /* préfixe propre à cette app (plusieurs apps sur le même site) */
-const VERSION = APP + "-v1.5.0";
+const VERSION = APP + "-v1.5.1";
 const SHELL = ["./", "index.html", "adapter.js", "config.js", "manifest.webmanifest",
-  "icon.svg", "icon-180.png", "icon-192.png", "icon-512.png"];
+  "icon.svg", "icon-180.png", "icon-192.png", "icon-512.png",
+  "vendor/jspdf.umd.min.js", "vendor/jspdf.plugin.autotable.min.js", "vendor/pptxgen.bundle.js"];
 const CDN = [
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js",
