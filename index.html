@@ -469,6 +469,42 @@ button.dc-frame:hover::after,button.dc-frame:focus-visible::after{opacity:.85}
 .dc-add{margin-top:10px;width:100%;border:1px dashed var(--line-strong);background:transparent;border-radius:8px;padding:8px 14px;color:var(--muted);font-size:13.5px}
 .dc-add:hover{border-color:var(--t-dec);color:var(--fg)}
 .dc-pvwrap{margin-top:18px}
+/* tableau éditable */
+.dct-wrap{margin-top:16px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
+.dct th{white-space:nowrap}
+.dct td{padding:0;vertical-align:top;border-bottom:1px solid var(--line)}
+.dct tr.first td{border-top:2px solid var(--line-strong)}
+.dct td.ed textarea{display:block;width:100%;min-height:46px;border:0;border-radius:0;background:transparent;padding:9px 10px;resize:none;line-height:1.45;font-size:13.5px;color:var(--fg)}
+.dct td.ed textarea:hover{background:color-mix(in srgb,var(--fg) 4%,transparent)}
+.dct td.ed textarea:focus{outline:2px solid var(--t-dec);outline-offset:-2px;background:var(--sunk)}
+.dct td.ed textarea::placeholder{color:var(--muted);opacity:.6}
+.dct .cellbtn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:46px;border:0;border-radius:0;background:transparent;padding:9px 10px;text-align:left;color:inherit;font:inherit}
+.dct button.cellbtn{cursor:pointer}
+.dct button.cellbtn:hover{background:color-mix(in srgb,var(--t-dec) 10%,transparent)}
+.dct button.cellbtn:focus-visible{outline:2px solid var(--t-dec);outline-offset:-2px}
+.dct-seq{width:160px;padding:10px!important;background:var(--sunk);border-right:1px solid var(--line)}
+.dct-seq b{display:block;font-family:var(--f-display);font-size:26px;line-height:1;color:var(--t-dec)}
+.dct-seq .h{display:block;margin-top:6px;font-family:var(--f-script);font-weight:700;font-size:12.5px;text-transform:uppercase}
+.dct-seq small{display:block;margin-top:4px;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.dct-seq .btn{margin-top:8px}
+.dct-plan{width:70px}.dct-plan b{font-family:var(--f-display);font-size:20px;line-height:1}.dct-plan small{color:var(--muted);font-size:12px}
+.dct-desc{width:27%}.dct-audio{width:23%}.dct-notes{width:16%}.dct-notes textarea{color:var(--muted)!important;font-size:13px!important}
+.dct-cam{width:175px}.dct-cam b{font-weight:600}.dct-cam span{color:var(--muted);font-size:12.5px}.dct-cam .dc-fx{margin-top:4px;color:var(--accent)}
+.dct-thumb{width:160px;padding:8px!important}.dct-thumb .dc-frame{width:140px}
+.dct tr.dct-add td{padding:6px 10px;border-bottom:1px solid var(--line)}
+.dct tr.dct-add .dc-add{margin:0;padding:6px 12px;width:auto}
+@media (max-width:760px){.dct-seq{width:112px}.dct-seq b{font-size:20px}.dct-seq .h{font-size:11.5px}}
+.dct .dct-none{padding:12px 10px;color:var(--muted)}
+.dct tr.dc-flash td{animation:dcf 1.2s ease-out}
+.dc-pop{position:fixed;z-index:60;width:min(300px,calc(100vw - 16px));background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 10px 30px rgb(0 0 0 / .35);padding:12px;display:flex;flex-direction:column;gap:10px}
+.dc-pop h4{margin:0;font-family:var(--f-display);font-size:17px;text-transform:uppercase;letter-spacing:.03em}
+.dc-pop label{display:flex;flex-direction:column;gap:3px}
+.dc-pop select,.dc-pop input{width:100%}
+.dc-pop input[type=number]{background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r);padding:6px 9px}
+.dc-pop .acts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dc-pop .acts .btn{justify-content:center}
+.dc-pop .mfoot{justify-content:space-between}
 .dc-pv{min-width:1120px}
 .dc-pv tr.first td{border-top:2px solid var(--line-strong)}
 .dcp-seq{width:150px;background:var(--sunk);border-right:1px solid var(--line)}
@@ -524,7 +560,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés */
-const APP_VERSION="1.3.1";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.3.2";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -2049,12 +2085,12 @@ function dcGrow(t){t.style.height="auto";t.style.height=(t.scrollHeight+2)+"px";
 function renderDecoupage(){
   const box=$("#dc");if(!box||!S.pid)return;
   const st=box.scrollTop;
-  keepFocus(()=>{box.innerHTML=DEC.view==="preview"?decPreviewHTML():decEditHTML();});
+  keepFocus(()=>{box.innerHTML=decEditHTML();});
   box.scrollTop=st;
   bindDec(box);
   box.querySelectorAll("textarea.dc-grow").forEach(dcGrow);
   if(DEC.focus){const el=document.getElementById("dc-a-"+DEC.focus);
-    if(el){DEC.focus=null;const art=el.closest(".dc-shot");art.classList.add("dc-flash");art.scrollIntoView({block:"nearest"});if(S.canWrite)el.focus({preventScroll:true});}}
+    if(el){DEC.focus=null;const row=el.closest("tr");row.classList.add("dc-flash");row.scrollIntoView({block:"nearest"});if(S.canWrite)el.focus({preventScroll:true});}}
 }
 function dcOpts(arr,val,pairs){return arr.map(o=>{const v=pairs?o[0]:o,t=pairs?o[0]+" · "+o[1]:o;return `<option value="${esc(v)}"${v===val?" selected":""}>${esc(t)}</option>`;}).join("");}
 function thumbHTML(x){
@@ -2074,80 +2110,97 @@ function decEditHTML(){
     <div class="actions">
       <label class="target">Durée cible <input type="text" id="dc-target" value="${tgt?esc(fmtDur(tgt)):""}" placeholder="2:30" inputmode="numeric" ${S.canWrite?"":"disabled"}></label>
       ${canAI?`<button class="btn primary" id="dc-ai" ${S.busy||!todo?"disabled":""} title="${todo?"Propose les plans des scènes pas encore découpées":"Toutes les scènes ont déjà des plans"}">Découper avec l'IA${todo&&todo<S.scenes.length?" · "+todo+" scène"+(todo>1?"s":""):""}</button>`:""}
-      <button class="btn" id="dc-pv" ${S.shots.length?"":"disabled"}>Aperçu</button>
+      ${S.dl?`<button class="btn" id="dc-csv" ${S.shots.length?"":"disabled"}>Exporter CSV</button>`:""}
+      <button class="btn" id="dc-copy" ${S.shots.length?"":"disabled"}>Copier le tableau</button>
     </div></div>`;
-  const note=!S.shots.length?`<div class="dc-note"><b>Le découpage est vide.</b> Ajoute les plans scène par scène avec « + Ajouter un plan »${canAI?", ou clique sur <b>Découper avec l'IA</b> pour une première proposition plan par plan. Tout reste modifiable ensuite":""}.</div>`:"";
-  const scenes=S.scenes.map(s=>{const list=shotsOf(s.id);const busy=DEC.ai.has(s.id);
-    return `<section class="dc-scene" aria-label="Scène ${esc(s.num)}">
-      <div class="dc-sh"><span class="n">${esc(s.num)}</span><span class="h">${esc(s.heading)}</span><span class="m">${list.length} plan${list.length>1?"s":""} · ${fmtDur(sumDur(list))}</span>
-        ${canAI?(busy?`<span class="m"><span class="spin"></span> Découpage${DEC.prog.get(s.id)?" "+esc(DEC.prog.get(s.id)):""}…</span>`:list.length?`<button class="btn ghost small dc-redo" data-sid="${esc(s.id)}" ${S.busy?"disabled":""}>Redécouper avec l'IA</button>`:`<button class="btn small dc-ai1" data-sid="${esc(s.id)}" ${S.busy?"disabled":""}>Découper avec l'IA</button>`):""}</div>
-      ${s.synopsis?`<p class="dc-syn">${esc(s.synopsis)}</p>`:""}
-      ${list.map((x,i)=>shotHTML(x,i,list.length)).join("")}
-      ${S.canWrite?`<button class="dc-add" data-sid="${esc(s.id)}">+ Ajouter un plan à la scène ${esc(s.num)}</button>`:""}
-    </section>`;}).join("");
-  return bar+`<div class="dc-inner">${note}${scenes||`<p class="empty" style="margin-top:20px">Ce projet n'a pas encore de scène. Importe ou écris le scénario d'abord.</p>`}</div>`;
-}
-function shotHTML(x,i,n){
-  const id=esc(x.id);const ro=S.canWrite?"":"disabled";const rt=S.canWrite?"":"readonly";const fx=x.effect&&x.effect!=="—";
-  return `<article class="dc-shot" id="dc-${id}" data-id="${id}" aria-label="Plan ${esc(shotNum(x))}">
-    <div class="dc-id"><div class="dc-num">${esc(shotNum(x))}</div>${thumbHTML(x)}<div class="dc-tl">${esc(SHOT_T[x.type]||x.type||"")}</div>${fx?`<span class="dc-fx">${esc(x.effect)}</span>`:""}</div>
-    <div class="dc-tech">
-      <label class="dc-f wide"><span class="dc-lbl">Type de plan</span><select id="dc-t-${id}" data-f="type" ${ro}>${dcOpts(SHOT_TYPES,x.type,true)}</select></label>
-      <label class="dc-f"><span class="dc-lbl">Mouvement</span><select id="dc-m-${id}" data-f="move" ${ro}>${dcOpts(MOVES,x.move)}</select></label>
-      <label class="dc-f"><span class="dc-lbl">Angle / axe</span><select id="dc-g-${id}" data-f="angle" ${ro}>${dcOpts(ANGLES,x.angle)}</select></label>
-      <label class="dc-f"><span class="dc-lbl">Effet</span><select id="dc-e-${id}" data-f="effect" ${ro}>${dcOpts(EFFECTS,x.effect||"—")}</select></label>
-      <label class="dc-f"><span class="dc-lbl">Durée</span><div class="dc-dur"><input type="number" id="dc-d-${id}" data-f="dur" min="0" step="0.5" value="${esc(x.dur??"")}" ${ro}><em>s</em></div></label>
-    </div>
-    <div class="dc-txt dc-act">
-      <label class="dc-f"><span class="dc-lbl">Description de l'action</span><textarea id="dc-a-${id}" data-f="action" class="dc-grow" rows="2" placeholder="Ce qu'on voit dans le cadre…" ${rt}>${esc(x.action||"")}</textarea></label>
-      <label class="dc-f"><span class="dc-lbl">Notes · incrustations, accessoires, VFX</span><textarea id="dc-n-${id}" data-f="notes" class="dc-grow small" rows="1" ${rt}>${esc(x.notes||"")}</textarea></label>
-    </div>
-    <div class="dc-txt dc-snd"><label class="dc-f"><span class="dc-lbl">Son · dialogue · voix off</span><textarea id="dc-s-${id}" data-f="sound" class="dc-grow" rows="2" placeholder="Répliques, voix off, ambiance…" ${rt}>${esc(x.sound||"")}</textarea></label></div>
-    ${S.canWrite?`<div class="dc-tools">
-      <button class="dc-tool" data-act="up" ${i===0?"disabled":""}>↑ Monter</button>
-      <button class="dc-tool" data-act="down" ${i===n-1?"disabled":""}>↓ Descendre</button>
-      ${S.scenes.length>1?`<select class="dc-tool dc-mv" id="dc-mv-${id}" aria-label="Déplacer le plan vers une autre scène"><option value="">Déplacer vers…</option>${S.scenes.filter(s=>s.id!==x.sceneId).map(s=>`<option value="${esc(s.id)}">Scène ${esc(s.num)}</option>`).join("")}</select>`:""}
-      <button class="dc-tool" data-act="dup">Dupliquer</button>
-      <button class="dc-tool" data-act="after">+ Plan après</button>
-      <button class="dc-tool del" data-act="del">Supprimer</button></div>`:""}
-  </article>`;
-}
-function decPreviewHTML(){
+  const note=!S.shots.length?`<div class="dc-note"><b>Le découpage est vide.</b> Ajoute les plans scène par scène avec « + Ajouter un plan »${canAI?", ou clique sur <b>Découper avec l'IA</b> pour une première proposition plan par plan":""}. Clique ensuite sur une cellule pour la modifier.</div>`:"";
   let body="";
-  for(const s of S.scenes){const list=shotsOf(s.id);if(!list.length)continue;
-    list.forEach((x,i)=>{body+=`<tr data-id="${esc(x.id)}"${i===0?` class="first"`:""}>${i===0?`<td class="dcp-seq" rowspan="${list.length}"><b>${esc(s.num)}</b><span>${esc(s.heading)}</span><small>${list.length} plan${list.length>1?"s":""} · ${fmtDur(sumDur(list))}</small></td>`:""}
-      <td class="dcp-plan"><b>${esc(shotNum(x))}</b><small>${esc(String(x.dur??"").replace(".",","))} s</small></td>
-      <td class="dcp-text dcp-desc">${esc(x.action||"")}</td>
-      <td class="dcp-text dcp-audio">${esc(x.sound||"")}</td>
-      <td class="dcp-cam"><b>${esc(SHOT_T[x.type]||x.type||"")}</b><span>${esc(x.move||"")}</span><span>${esc(x.angle||"")}</span>${x.effect&&x.effect!=="—"?`<span class="dc-fx">${esc(x.effect)}</span>`:""}</td>
-      <td class="dcp-thumb">${thumbHTML(x)}</td>
-      <td class="dcp-text dcp-notes">${esc(x.notes||"")}</td></tr>`;});}
-  return `<div class="dc-bar">
-      <button class="btn" id="dc-back">← Retour au découpage</button>
-      <div class="stats"><div class="stat"><b>${S.shots.length}</b><span>plans</span></div><div class="stat"><b>${fmtDur(sumDur(S.shots))}</b><span>durée estimée</span></div></div>
-      <div class="actions">${S.dl?`<button class="btn primary" id="dc-csv">Exporter CSV</button>`:""}<button class="btn" id="dc-copy">Copier le tableau</button></div>
-    </div>
-    <div class="dc-inner"><div class="tablewrap dc-pvwrap"><table class="dc-pv"><thead><tr><th>#Séq</th><th>#Plan</th><th>Description</th><th>Audio</th><th>Caméra</th><th>Vignette</th><th>Notes</th></tr></thead><tbody>${body||`<tr><td colspan="7" class="empty">Aucun plan pour l'instant.</td></tr>`}</tbody></table></div></div>`;
+  for(const s of S.scenes){const list=shotsOf(s.id);const rows=list.length+(S.canWrite?1:0)||1;
+    const seq=`<td class="dct-seq" rowspan="${rows}"><b>${esc(s.num)}</b><span class="h">${esc(s.heading)}</span><small>${list.length} plan${list.length>1?"s":""} · ${fmtDur(sumDur(list))}</small>${seqAI(s,list,canAI)}</td>`;
+    list.forEach((x,i)=>{body+=shotRowHTML(x,i,i===0?seq:"");});
+    if(S.canWrite)body+=`<tr class="dct-add${list.length?"":" first"}">${list.length?"":seq}<td colspan="6"><button class="dc-add" data-sid="${esc(s.id)}">+ Ajouter un plan à la scène ${esc(s.num)}</button></td></tr>`;
+    else if(!list.length)body+=`<tr class="first">${seq}<td colspan="6" class="dct-none">Aucun plan pour cette scène.</td></tr>`;
+  }
+  const table=S.scenes.length?`<div class="dct-wrap"><table class="dct"><thead><tr><th>#Séq</th><th>#Plan</th><th>Description</th><th>Audio</th><th>Caméra</th><th>Vignette</th><th>Notes</th></tr></thead><tbody>${body}</tbody></table></div>`
+    :`<p class="empty" style="margin-top:20px">Ce projet n'a pas encore de scène. Importe ou écris le scénario d'abord.</p>`;
+  return bar+`<div class="dc-inner">${note}${table}</div>`;
+}
+function seqAI(s,list,canAI){
+  if(!canAI)return"";
+  if(DEC.ai.has(s.id))return`<small><span class="spin"></span> Découpage${DEC.prog.get(s.id)?" "+esc(DEC.prog.get(s.id)):""}…</small>`;
+  return list.length?`<button class="btn ghost small dc-redo" data-sid="${esc(s.id)}" ${S.busy?"disabled":""}>Redécouper avec l'IA</button>`
+    :`<button class="btn small dc-ai1" data-sid="${esc(s.id)}" ${S.busy?"disabled":""}>Découper avec l'IA</button>`;
+}
+function shotRowHTML(x,i,seq){
+  const id=esc(x.id);const w=S.canWrite;const n=esc(shotNum(x));const fx=x.effect&&x.effect!=="—";
+  const cell=(cls,label,inner)=>w?`<button type="button" class="cellbtn ${cls}" aria-label="${label}">${inner}</button>`:`<div class="cellbtn">${inner}</div>`;
+  const ta=(f,key,ph,label,cls)=>`<textarea id="dc-${key}-${id}" data-f="${f}" class="dc-grow${cls?" "+cls:""}" rows="2" placeholder="${w?ph:""}" aria-label="${label} du plan ${n}" ${w?"":"readonly"}>${esc(x[f]||"")}</textarea>`;
+  return `<tr data-id="${id}" id="dc-${id}"${i===0?` class="first"`:""}>${seq}
+    <td class="dct-plan">${cell("dc-plan","Plan "+n+" : durée et actions",`<b>${n}</b><small>${esc(String(x.dur??"").replace(".",","))} s</small>`)}</td>
+    <td class="ed dct-desc">${ta("action","a","Ce qu'on voit dans le cadre…","Description")}</td>
+    <td class="ed dct-audio">${ta("sound","s","Répliques, voix off, ambiance…","Audio")}</td>
+    <td class="dct-cam">${cell("dc-cam","Caméra du plan "+n+" : type de plan, mouvement, angle",`<b>${esc(SHOT_T[x.type]||x.type||"")}</b><span>${esc(x.move||"")}</span><span>${esc(x.angle||"")}</span>${fx?`<span class="dc-fx">${esc(x.effect)}</span>`:""}`)}</td>
+    <td class="dct-thumb">${thumbHTML(x)}</td>
+    <td class="ed dct-notes">${ta("notes","n","Incrustations, accessoires…","Notes")}</td></tr>`;
 }
 function bindDec(box){
   const on=(id,fn)=>{const b=document.getElementById(id);if(b)b.onclick=fn;};
-  on("dc-ai",decoupeAll);on("dc-pv",()=>{DEC.view="preview";$("#dc").scrollTop=0;render();});on("dc-back",()=>{DEC.view="edit";render();});
-  on("dc-csv",exportDecCSV);on("dc-copy",copyDec);
+  on("dc-ai",decoupeAll);on("dc-csv",exportDecCSV);on("dc-copy",copyDec);
   const tg=$("#dc-target");if(tg)tg.onchange=()=>S.db.doc("projects/"+S.pid).update({targetSec:parseDur(tg.value)}).catch(writeErr);
   box.querySelectorAll(".dc-ai1").forEach(b=>b.onclick=()=>decoupeScene(b.dataset.sid));
   box.querySelectorAll(".dc-redo").forEach(b=>b.onclick=()=>confirmRedo(b.dataset.sid));
   box.querySelectorAll(".dc-add").forEach(b=>b.onclick=()=>addShot(b.dataset.sid,null));
+  const shotOf=el=>S.shots.find(y=>y.id===el.closest("[data-id]")?.dataset.id);
   box.querySelectorAll(".dc-frame").forEach(b=>{
     const im=b.querySelector("img");if(im)im.onerror=()=>{b.innerHTML=picto(b.dataset.type);};
-    b.onclick=()=>{const x=S.shots.find(y=>y.id===b.closest("[data-id]")?.dataset.id);if(x)openThumb(x);};});
-  box.querySelectorAll(".dc-shot").forEach(art=>{const id=art.dataset.id;
-    art.querySelectorAll("[data-f]").forEach(el=>{const f=el.dataset.f;
-      if(el.tagName==="TEXTAREA"){el.oninput=()=>{dcGrow(el);decLater(id,f,el.value);};el.onchange=()=>decNow(id,f,el.value);}
-      else if(f==="dur")el.onchange=()=>decNow(id,f,Math.max(0,Number(el.value)||0));
-      else el.onchange=()=>decNow(id,f,el.value);});
-    art.querySelectorAll("button[data-act]").forEach(b=>b.onclick=()=>{const x=S.shots.find(y=>y.id===id);if(x)shotAct(x,b.dataset.act);});
-    const mv=art.querySelector(".dc-mv");if(mv)mv.onchange=()=>{const x=S.shots.find(y=>y.id===id);if(x&&mv.value)moveShotTo(x,mv.value);};
-  });
+    b.onclick=()=>{const x=shotOf(b);if(x)openThumb(x);};});
+  box.querySelectorAll("textarea[data-f]").forEach(el=>{const id=el.closest("[data-id]").dataset.id;const f=el.dataset.f;
+    el.oninput=()=>{dcGrow(el);decLater(id,f,el.value);};el.onchange=()=>decNow(id,f,el.value);});
+  box.querySelectorAll(".dc-cam").forEach(b=>b.onclick=()=>{const x=shotOf(b);if(x)openCamPop(x,b);});
+  box.querySelectorAll(".dc-plan").forEach(b=>b.onclick=()=>{const x=shotOf(b);if(x)openPlanPop(x,b);});
+}
+/* menus contextuels des cellules */
+let dcPopEl=null;
+function closeDcPop(){if(dcPopEl){dcPopEl.remove();dcPopEl=null;}}
+document.addEventListener("pointerdown",e=>{if(dcPopEl&&!dcPopEl.contains(e.target)&&!e.target.closest?.(".dct button.cellbtn"))closeDcPop();},true);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDcPop();});
+function placeDcPop(d,anchor){
+  document.body.append(d);dcPopEl=d;const r=anchor.getBoundingClientRect();const w=d.offsetWidth,h=d.offsetHeight;
+  const x=Math.min(Math.max(8,r.left),innerWidth-w-8);let y=r.bottom+6;if(y+h>innerHeight-8)y=Math.max(8,r.top-h-6);
+  d.style.left=x+"px";d.style.top=y+"px";
+}
+function openCamPop(x,anchor){
+  closeDcPop();closePop();
+  const d=document.createElement("div");d.className="dc-pop";d.setAttribute("role","dialog");d.setAttribute("aria-label","Caméra du plan "+shotNum(x));
+  d.innerHTML=`<h4>Caméra · plan ${esc(shotNum(x))}</h4>
+    <label><span class="dc-lbl">Type de plan</span><select data-f="type">${dcOpts(SHOT_TYPES,x.type,true)}</select></label>
+    <label><span class="dc-lbl">Mouvement</span><select data-f="move">${dcOpts(MOVES,x.move)}</select></label>
+    <label><span class="dc-lbl">Angle / axe</span><select data-f="angle">${dcOpts(ANGLES,x.angle)}</select></label>
+    <label><span class="dc-lbl">Effet</span><select data-f="effect">${dcOpts(EFFECTS,x.effect||"—")}</select></label>
+    <div class="mfoot"><span></span><button class="btn small" type="button" data-close>Fermer</button></div>`;
+  d.querySelectorAll("select").forEach(s=>s.onchange=()=>decNow(x.id,s.dataset.f,s.value));
+  d.querySelector("[data-close]").onclick=closeDcPop;
+  placeDcPop(d,anchor);d.querySelector("select").focus();
+}
+function openPlanPop(x,anchor){
+  closeDcPop();closePop();
+  const list=shotsOf(x.sceneId);const i=list.findIndex(y=>y.id===x.id);const others=S.scenes.filter(s=>s.id!==x.sceneId);
+  const d=document.createElement("div");d.className="dc-pop";d.setAttribute("role","dialog");d.setAttribute("aria-label","Plan "+shotNum(x));
+  d.innerHTML=`<h4>Plan ${esc(shotNum(x))}</h4>
+    <label><span class="dc-lbl">Durée (secondes)</span><input type="number" min="0" step="0.5" value="${esc(x.dur??"")}" data-f="dur"></label>
+    <div class="acts">
+      <button class="btn small" type="button" data-act="up" ${i<=0?"disabled":""}>↑ Monter</button>
+      <button class="btn small" type="button" data-act="down" ${i>=list.length-1?"disabled":""}>↓ Descendre</button>
+      <button class="btn small" type="button" data-act="dup">Dupliquer</button>
+      <button class="btn small" type="button" data-act="after">+ Plan après</button>
+    </div>
+    ${others.length?`<label><span class="dc-lbl">Déplacer vers</span><select data-mv><option value="">Choisir une scène…</option>${others.map(s=>`<option value="${esc(s.id)}">Scène ${esc(s.num)} · ${esc(s.location||s.heading)}</option>`).join("")}</select></label>`:""}
+    <div class="mfoot"><button class="btn small danger" type="button" data-act="del">Supprimer le plan</button><button class="btn small" type="button" data-close>Fermer</button></div>`;
+  const dur=d.querySelector("[data-f=dur]");dur.onchange=()=>decNow(x.id,"dur",Math.max(0,Number(dur.value)||0));
+  d.querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>{closeDcPop();shotAct(x,b.dataset.act);});
+  const mv=d.querySelector("[data-mv]");if(mv)mv.onchange=()=>{if(mv.value){closeDcPop();moveShotTo(x,mv.value);}};
+  d.querySelector("[data-close]").onclick=closeDcPop;
+  placeDcPop(d,anchor);dur.focus();dur.select();
 }
 
 /* écritures */
