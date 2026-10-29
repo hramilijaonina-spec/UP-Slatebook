@@ -505,6 +505,33 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
 .dc-pop .acts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .dc-pop .acts .btn{justify-content:center}
 .dc-pop .mfoot{justify-content:space-between}
+/* UpCopilot */
+.cop-fab{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 20px 0 15px;border:0;border-radius:26px;background:linear-gradient(135deg,var(--t-dec),var(--t-scenes));color:#1f0d00;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 8px 24px rgb(0 0 0 / .4);cursor:pointer}
+.cop-fab:hover{filter:brightness(1.08)}
+.cop-fab svg,.cop-panel header svg{width:24px;height:24px;fill:currentColor;flex:0 0 auto}
+@media (max-width:560px){.cop-fab{width:56px;height:56px;padding:0;justify-content:center;border-radius:50%}.cop-fab span{display:none}}
+.cop-panel{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:45;width:min(400px,calc(100vw - 32px));height:min(620px,calc(100vh - 110px));display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:0 16px 48px rgb(0 0 0 / .5);overflow:hidden}
+@media (max-width:560px){.cop-panel{left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));width:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));height:min(80vh,640px)}}
+.cop-panel header{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,color-mix(in srgb,var(--t-dec) 24%,var(--surface)),var(--surface));color:var(--t-dec)}
+.cop-panel header div{min-width:0;color:var(--fg)}
+.cop-panel header b{display:block;font-family:var(--f-display);font-size:19px;letter-spacing:.05em;text-transform:uppercase;line-height:1}
+.cop-panel header small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cop-x{margin-left:auto;width:32px;height:32px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--fg);font-size:18px;line-height:1}
+.cop-log{flex:1;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.cop-m{max-width:90%;padding:8px 11px;border-radius:12px;font-size:13.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.cop-m.u{align-self:flex-end;background:var(--accent);color:var(--accent-fg);border-bottom-right-radius:4px}
+.cop-m.b{align-self:flex-start;background:var(--sunk);border:1px solid var(--line);border-bottom-left-radius:4px}
+.cop-m.e{align-self:flex-start;color:var(--danger);border:1px solid color-mix(in srgb,var(--danger) 40%,var(--line))}
+.cop-acts{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:8px;white-space:normal}
+.cop-acts ul{margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:3px}
+.cop-proj{font-size:12.5px;font-weight:600;color:var(--t-dec)}
+.cop-acts .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cop-st{font-size:12.5px;color:var(--muted)}.cop-st.ok{color:var(--ok);font-weight:600}
+.cop-chips{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.cop-chip{border:1px solid var(--line-strong);background:var(--surface);border-radius:14px;padding:6px 11px;font-size:12.5px;text-align:left;color:var(--fg)}
+.cop-chip:hover{border-color:var(--t-dec)}
+.cop-form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);align-items:flex-end}
+.cop-form textarea{flex:1;min-height:40px;max-height:120px;resize:none;font-size:14px;line-height:1.4}
 .dc-pv{min-width:1120px}
 .dc-pv tr.first td{border-top:2px solid var(--line-strong)}
 .dcp-seq{width:150px;background:var(--sunk);border-right:1px solid var(--line)}
@@ -560,7 +587,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés */
-const APP_VERSION="1.3.2";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.4.0";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -742,7 +769,7 @@ function renderTop(){
     pg.innerHTML=`<span class="spin" aria-hidden="true"></span><span>${esc(S.busy.label||"Analyse")} ${S.busy.done}/${S.busy.total}</span><span class="bar"><i style="width:${pc}%"></i></span><button class="btn small" id="b-stop">Arrêter</button>`;
     $("#b-stop").onclick=()=>{S.busy?.ctl.abort();};
   }else pg.hidden=true;
-  renderPeers();
+  renderPeers();renderCopilot();
 }
 function mainMenu(anchor){
   const items=[];
@@ -2239,7 +2266,7 @@ function toastUndo(msg,label,fn,ms=6000){
 }
 
 /* découpage par l'IA */
-function decPrompt(s,text,k,n,prev){
+function decPrompt(s,text,k,n,prev,extra){
   return `Tu es réalisateur et premier assistant réalisateur. Fais le découpage technique plan par plan de ce passage de scénario.
 
 Pour chaque plan, donne :
@@ -2259,7 +2286,8 @@ Règles :
 - Un personnage qui parle au spectateur : angle "Face caméra". Un arrêt sur image : effet "Arrêt sur image".
 - Des durées réalistes : leur somme correspond au temps du passage à l'écran.
 - Sois concis : pas de texte hors du JSON.
-${n>1?`
+${extra?`- Consignes du réalisateur : ${extra}
+`:""}${n>1?`
 Ce passage est la partie ${k+1} sur ${n} de la scène : découpe uniquement ce passage.${prev?` Le plan précédent était : ${prev.type} — ${String(prev.action||"").slice(0,160)}`:""}
 `:""}
 Réponds uniquement avec ce JSON :
@@ -2304,7 +2332,7 @@ async function decoupeScene(sid,opts={}){
       if(opts.signal?.aborted)throw{code:"cancelled"};
       if(parts.length>1){DEC.prog.set(sid,(k+1)+"/"+parts.length);render();}
       let res;
-      try{res=await S.sample.json(decPrompt(s,parts[k],k,parts.length,prev),{signal:opts.signal});}
+      try{res=await S.sample.json(decPrompt(s,parts[k],k,parts.length,prev,opts.extra),{signal:opts.signal});}
       catch(e){const sv=e?.text?salvageShots(e.text):[];if(sv.length)res={shots:sv};else throw e;}
       const items=(Array.isArray(res?.shots)?res.shots:Array.isArray(res)?res:[]).slice(0,80).map(validShot);
       await chunked(items.map((it,i)=>({it,i})),5,({it,i})=>S.db.collection(base()+"/shots").add({...it,img:null,sceneId:sid,pos:pos+(i+1)*1024,src:"ai",createdAt:Date.now(),createdBy:S.me?.id||null}));
@@ -2415,6 +2443,205 @@ function copyDec(){
   const ok=()=>toast("Tableau copié : colle-le dans Sheets ou Excel.");
   const fb=()=>{const t=document.createElement("textarea");t.value=tsv;t.style.cssText="position:fixed;opacity:0;top:0;left:0";document.body.append(t);t.select();let r=false;try{r=document.execCommand("copy");}catch{}t.remove();r?ok():toast("La copie a été refusée par le navigateur.");};
   try{navigator.clipboard.writeText(tsv).then(ok,fb);}catch{fb();}
+}
+
+/* ---------- UpCopilot : assistant flottant (administrateur et éditeurs) ---------- */
+const COP={open:false,pid:null,msgs:[],busy:false,ctl:null};
+const COP_SPARK=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 4.9L19 9.8l-5.1 1.9L12 17l-1.9-5.3L5 9.8l5.1-1.9z"/><path d="M19 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>`;
+function copAllowed(){return !!(S.pid&&S.canWrite&&S.sample&&!S.aiOff&&(S.isAdmin||!["viewer","commenter"].includes(S.role)));}
+function renderCopilot(){
+  if(COP.pid!==S.pid){COP.pid=S.pid;COP.msgs=[];if(COP.ctl)COP.ctl.abort();COP.busy=false;if($("#cop-log"))drawCop();}
+  let fab=$("#cop-fab");const ok=copAllowed();
+  if(!ok){if(fab)fab.hidden=true;const p=$("#cop-panel");if(p)p.hidden=true;return;}
+  if(!fab){fab=document.createElement("button");fab.id="cop-fab";fab.type="button";fab.className="cop-fab";fab.setAttribute("aria-label","Ouvrir UpCopilot");
+    fab.innerHTML=COP_SPARK+`<span>UpCopilot</span>`;fab.onclick=()=>toggleCop(true);document.body.append(fab);}
+  fab.hidden=COP.open;const p=$("#cop-panel");if(p){p.hidden=!COP.open;const c=$("#cop-ctx");if(c)c.textContent=P()?.name||"";}
+}
+function toggleCop(open){
+  COP.open=open;
+  if(open&&!$("#cop-panel")){
+    const p=document.createElement("section");p.id="cop-panel";p.className="cop-panel";p.setAttribute("role","dialog");p.setAttribute("aria-label","UpCopilot");
+    p.innerHTML=`<header>${COP_SPARK}<div><b>UpCopilot</b><small id="cop-ctx"></small></div><button type="button" class="cop-x" id="cop-x" aria-label="Fermer UpCopilot">×</button></header>
+      <div class="cop-log" id="cop-log" aria-live="polite"></div>
+      <form class="cop-form" id="cop-form"><textarea id="cop-in" rows="1" placeholder="Demande à UpCopilot…" aria-label="Message pour UpCopilot"></textarea><button class="btn primary" type="submit" id="cop-send">Envoyer</button></form>`;
+    document.body.append(p);
+    $("#cop-x").onclick=()=>toggleCop(false);
+    const inp=$("#cop-in");
+    inp.oninput=()=>{inp.style.height="auto";inp.style.height=Math.min(120,inp.scrollHeight+2)+"px";};
+    inp.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#cop-form").requestSubmit();}};
+    $("#cop-form").onsubmit=e=>{e.preventDefault();const v=inp.value.trim();if(!v||COP.busy)return;inp.value="";inp.style.height="auto";copSend(v);};
+    p.addEventListener("keydown",e=>{if(e.key==="Escape")toggleCop(false);});
+  }
+  renderCopilot();drawCop();
+  if(open)setTimeout(()=>$("#cop-in")?.focus(),30);else $("#cop-fab")?.focus();
+}
+function drawCop(){
+  const log=$("#cop-log");if(!log)return;log.innerHTML="";
+  const sendBtn=$("#cop-send");if(sendBtn)sendBtn.disabled=COP.busy;
+  if(!COP.msgs.length){
+    const intro=document.createElement("div");intro.className="cop-m b";
+    intro.textContent="Bonjour ! Je peux modifier le découpage de cet épisode : redécouper une scène, raccourcir les plans pour tenir une durée, ajouter ou supprimer des plans, ou répondre à une question. Je te montre toujours ce que je propose avant de l'appliquer.";
+    const chips=document.createElement("div");chips.className="cop-chips";
+    const first=S.scenes[0]?.num||"1";
+    ["Redécoupe la scène "+first+" avec des plans plus courts","Fais tenir tout l'épisode en 2 min 30","Combien de plans et quelle durée par scène ?"].forEach(q=>{
+      const b=document.createElement("button");b.type="button";b.className="cop-chip";b.textContent=q;b.onclick=()=>copSend(q);chips.append(b);});
+    log.append(intro,chips);return;}
+  for(const m of COP.msgs){
+    const d=document.createElement("div");d.className="cop-m "+(m.role==="user"?"u":m.role==="err"?"e":"b");
+    const t=document.createElement("div");t.textContent=m.text;d.append(t);
+    if(m.actions&&m.actions.length)d.append(copActionsEl(m));
+    log.append(d);}
+  if(COP.busy){const d=document.createElement("div");d.className="cop-m b";d.innerHTML=`<span class="spin"></span> ${esc(COP.busyText||"UpCopilot réfléchit…")}`;log.append(d);}
+  log.scrollTop=log.scrollHeight;
+}
+function copActionsEl(m){
+  const box=document.createElement("div");box.className="cop-acts";
+  const ul=document.createElement("ul");for(const a of m.actions){const li=document.createElement("li");li.textContent=copDescribe(a,m);ul.append(li);}box.append(ul);
+  const proj=copProjected(m);if(proj!=null){const p=document.createElement("div");p.className="cop-proj";p.textContent="Durée estimée après : "+fmtDur(proj)+(Number(P()?.targetSec)?" (cible "+fmtDur(P().targetSec)+")":"");box.append(p);}
+  const row=document.createElement("div");row.className="row";
+  const btn=(label,cls,fn)=>{const b=document.createElement("button");b.type="button";b.className="btn small "+(cls||"");b.textContent=label;b.onclick=fn;row.append(b);return b;};
+  if(m.state==="pending"){btn("Appliquer","primary",()=>copApply(m)).disabled=COP.busy;btn("Ignorer","",()=>{m.state="ignored";drawCop();});}
+  else if(m.state==="applying"){const s=document.createElement("span");s.className="cop-st";s.innerHTML=`<span class="spin"></span> Application en cours…`;row.append(s);}
+  else if(m.state==="applied"){const s=document.createElement("span");s.className="cop-st ok";s.textContent="Appliqué";row.append(s);btn("Annuler les changements","",()=>copUndo(m)).disabled=COP.busy;}
+  else if(m.state==="undone"){const s=document.createElement("span");s.className="cop-st";s.textContent="Changements annulés";row.append(s);}
+  else if(m.state==="ignored"){const s=document.createElement("span");s.className="cop-st";s.textContent="Ignoré";row.append(s);}
+  box.append(row);return box;
+}
+function copDescribe(a,m){
+  const old=a._id?m.snapAll.find(x=>x.id===a._id):null;
+  if(a.op==="redecoupe")return"Redécouper la scène "+a.scene+(a.budget?" en visant "+fmtDur(a.budget):"")+(a.instructions?" : "+a.instructions:"");
+  if(a.op==="delete")return"Supprimer le plan "+a.plan+(old&&old.action?" ("+String(old.action).slice(0,60)+(String(old.action).length>60?"…":"")+")":"");
+  if(a.op==="target")return"Durée cible : "+fmtDur(a.seconds);
+  if(a.op==="add")return"Ajouter un plan à la scène "+a.scene+(a.after?" après le "+a.after:"")+" : "+(SHOT_T[a.f.type]||"Plan moyen")+(a.f.dur!=null?", "+String(a.f.dur).replace(".",",")+" s":"")+(a.f.action?" — "+a.f.action.slice(0,70):"");
+  if(a.op==="update"){const ch=[];const f=a.f;
+    if(f.dur!=null)ch.push("durée "+String(old?.dur??"?").replace(".",",")+" s → "+String(f.dur).replace(".",",")+" s");
+    if(f.type)ch.push(SHOT_T[f.type]);if(f.move)ch.push(f.move);if(f.angle)ch.push(f.angle);if(f.effect)ch.push("effet "+f.effect);
+    if(f.action!=null)ch.push("action : "+f.action.slice(0,60));if(f.sound!=null)ch.push("son modifié");if(f.notes!=null)ch.push("notes modifiées");
+    return"Plan "+a.plan+" : "+(ch.join(", ")||"aucun changement");}
+  return a.op;
+}
+function copProjected(m){
+  if(m.actions.some(a=>a.op==="redecoupe"))return null;
+  if(!m.actions.some(a=>a.op==="update"&&a.f.dur!=null||a.op==="delete"||a.op==="add"))return null;
+  let tot=sumDur(m.snapAll);
+  for(const a of m.actions){const old=a._id?m.snapAll.find(x=>x.id===a._id):null;
+    if(a.op==="delete"&&old)tot-=Number(old.dur)||0;
+    if(a.op==="update"&&old&&a.f.dur!=null)tot+=a.f.dur-(Number(old.dur)||0);
+    if(a.op==="add")tot+=a.f.dur??3;}
+  return Math.max(0,tot);
+}
+function copFields(a){
+  const f={};const ty=String(a.type||"").toUpperCase().replace(/\s+/g,"");
+  if(SHOT_T[ty])f.type=ty;if(MOVES.includes(a.move))f.move=a.move;if(ANGLES.includes(a.angle))f.angle=a.angle;if(EFFECTS.includes(a.effect))f.effect=a.effect;
+  if(a.dur!=null&&a.dur!==""&&isFinite(Number(a.dur)))f.dur=Math.max(0.5,Math.min(120,Math.round(Number(a.dur)*2)/2));
+  for(const k of["action","sound","notes"])if(typeof a[k]==="string")f[k]=a[k].slice(0,2000);
+  return f;
+}
+function copPrompt(req){
+  const tgt=Number(P()?.targetSec)||0;const tot=sumDur(S.shots);
+  const cut=v=>String(v||"").replace(/\s+/g," ").trim().slice(0,140);
+  const lines=[];
+  for(const s of S.scenes){const list=shotsOf(s.id);
+    lines.push(`Scène ${s.num} — ${s.heading}${s.synopsis?" ("+cut(s.synopsis)+")":""} · ${list.length} plans · ${Math.round(sumDur(list)*10)/10} s`);
+    if(!list.length)lines.push("  (aucun plan)");
+    for(const x of list)lines.push(`  ${shotNum(x)} | ${x.type} | ${x.move} | ${x.angle} | ${x.effect||"—"} | ${x.dur} s | ${cut(x.action)} | ${cut(x.sound)}`);}
+  const hist=COP.msgs.slice(-7,-1).filter(m=>m.role!=="err").map(m=>(m.role==="user"?"Réalisateur : ":"UpCopilot : ")+m.text.slice(0,400)).join("\n");
+  return `Tu es UpCopilot, l'assistant de préproduction de l'agence UP intégré à UP Slatebook. Tu aides le réalisateur à modifier le découpage technique de l'épisode ouvert.
+
+Projet : ${P()?.name||""}
+Durée actuelle : ${Math.round(tot*10)/10} s pour ${S.shots.length} plans. Durée cible : ${tgt?tgt+" s":"non définie"}.
+Valeurs autorisées — type : ${SHOT_TYPES.map(t=>t[0]+" ("+t[1]+")").join(", ")} ; move : ${MOVES.join(", ")} ; angle : ${ANGLES.join(", ")} ; effect : ${EFFECTS.join(", ")}.
+
+Découpage actuel (plan | type | mouvement | angle | effet | durée | action | son) :
+${lines.join("\n")}
+${hist?`
+Échanges précédents :
+${hist}
+`:""}
+Demande du réalisateur : « ${req} »
+
+Réponds uniquement avec ce JSON :
+{"reply":"…","actions":[]}
+
+Actions possibles :
+- {"op":"redecoupe","scene":"1","budget":40,"instructions":"…"} : remplace tous les plans de la scène par un nouveau découpage fait d'après le texte de la scène ; budget = durée visée en secondes (facultatif) ; instructions = consignes de style (facultatif).
+- {"op":"update","plan":"1.3","dur":2.5,"type":"GP","move":"…","angle":"…","effect":"…","action":"…","sound":"…","notes":"…"} : ne mets que les champs à changer.
+- {"op":"delete","plan":"1.4"}
+- {"op":"add","scene":"1","after":"1.3","type":"PM","move":"Fixe","angle":"Normal","effect":"—","dur":3,"action":"…","sound":"…","notes":""} : "after" facultatif (sinon en fin de scène).
+- {"op":"target","seconds":150} : change la durée cible de l'épisode.
+
+Règles :
+- Pour une simple question, réponds dans "reply" et laisse "actions" vide.
+- Pour faire tenir l'épisode dans une durée : si les scènes ont déjà des plans, raccourcis les durées et supprime les plans redondants plutôt que de tout refaire, en gardant les répliques essentielles ; si une scène n'a pas de plans, utilise "redecoupe" avec un "budget". Ajoute aussi une action "target". La somme finale doit respecter la durée demandée.
+- Les numéros de plan et de scène sont ceux de la liste ci-dessus, avant toute modification.
+- Pour tout écran de téléphone, utilise le type PSE (plan serré sur la personne à gauche, animation de l'écran à droite).
+- "reply" : une à trois phrases en français, en tutoyant, qui disent ce que tu proposes.`;
+}
+async function copSend(text){
+  if(COP.busy)return;
+  COP.msgs.push({role:"user",text});COP.busy=true;COP.busyText="UpCopilot réfléchit…";drawCop();
+  const ref={},scn={};for(const s of S.scenes){scn[String(s.num)]=s.id;for(const x of shotsOf(s.id))ref[shotNum(x)]=x.id;}
+  const snapAll=S.shots.map(x=>JSON.parse(JSON.stringify(x)));
+  COP.ctl=new AbortController();
+  try{
+    let res;
+    try{res=await S.sample.json(copPrompt(text),{signal:COP.ctl.signal});}
+    catch(e){if(e?.text){const j=String(e.text);const i=j.indexOf("{");try{res=JSON.parse(j.slice(i,j.lastIndexOf("}")+1));}catch{throw e;}}else throw e;}
+    const acts=[];
+    for(const a of Array.isArray(res?.actions)?res.actions:[]){if(!a||typeof a!=="object")continue;
+      const op=String(a.op||"");
+      if(op==="redecoupe"&&scn[String(a.scene)])acts.push({op,scene:String(a.scene),_sid:scn[String(a.scene)],budget:Number(a.budget)>0?Math.round(Number(a.budget)):0,instructions:String(a.instructions||"").slice(0,400)});
+      else if((op==="update"||op==="delete")&&ref[String(a.plan)]){const x=snapAll.find(y=>y.id===ref[String(a.plan)]);acts.push({op,plan:String(a.plan),_id:x.id,_sid:x.sceneId,f:op==="update"?copFields(a):{}});}
+      else if(op==="add"&&scn[String(a.scene)])acts.push({op,scene:String(a.scene),_sid:scn[String(a.scene)],after:ref[String(a.after)]?String(a.after):"",_after:ref[String(a.after)]||null,f:copFields(a)});
+      else if(op==="target"&&Number(a.seconds)>0)acts.push({op,seconds:Math.round(Number(a.seconds))});}
+    const clean=acts.filter(a=>a.op!=="update"||Object.keys(a.f).length);
+    COP.msgs.push({role:"bot",text:String(res?.reply||(clean.length?"Voici ce que je propose.":"Je n'ai pas de modification à proposer.")).slice(0,1500),actions:clean,state:clean.length?"pending":"",snapAll});
+  }catch(e){
+    const code=e?.code||"upstream_error";
+    if(code==="cancelled"){COP.msgs.push({role:"err",text:"Demande annulée."});}
+    else if(code==="no_key"||code==="bad_key"){COP.msgs.push({role:"err",text:"Il faut une clé API valide pour l'équipe."});window.DDC_openKey&&window.DDC_openKey(code==="bad_key");}
+    else if(code==="no_credit")COP.msgs.push({role:"err",text:"Crédit API Anthropic épuisé. Recharge ton compte sur console.anthropic.com."});
+    else if(code==="offline")COP.msgs.push({role:"err",text:"UpCopilot a besoin d'internet."});
+    else if(code==="rate_limited")COP.msgs.push({role:"err",text:"Limite d'utilisation de l'IA atteinte. Réessaie dans quelques minutes."});
+    else COP.msgs.push({role:"err",text:"Je n'ai pas pu répondre ("+code+"). Reformule ou réessaie."});
+  }finally{COP.busy=false;COP.ctl=null;drawCop();}
+}
+async function copApply(m){
+  if(COP.busy)return;COP.busy=true;m.state="applying";COP.busyText="Application des changements…";drawCop();
+  const scenes=new Set(m.actions.map(a=>a._sid).filter(Boolean));
+  const snap=S.shots.filter(x=>scenes.has(x.sceneId)).map(x=>JSON.parse(JSON.stringify(x)));
+  const target={had:P()?.targetSec??null};
+  try{
+    for(const a of m.actions){
+      if(a.op==="update"){if(S.shots.some(x=>x.id===a._id))await shotDoc(a._id).update({...a.f,updatedAt:Date.now(),updatedBy:S.me?.id||null});}
+      else if(a.op==="delete"){if(S.shots.some(x=>x.id===a._id))await shotDoc(a._id).delete();}
+      else if(a.op==="target"){await S.db.doc("projects/"+S.pid).update({targetSec:a.seconds});}
+    }
+    for(const a of m.actions){
+      if(a.op==="add"){const after=a._after?S.shots.find(x=>x.id===a._after):null;await addShot(a._sid,after,a.f);}
+    }
+    for(const a of m.actions){
+      if(a.op!=="redecoupe")continue;const s=scene(a._sid);if(!s)continue;
+      COP.busyText="Redécoupage de la scène "+s.num+"…";drawCop();
+      await chunked(shotsOf(a._sid),5,x=>shotDoc(x.id).delete());
+      const extra=[a.instructions,a.budget?"Durée totale visée pour cette scène : environ "+a.budget+" secondes.":""].filter(Boolean).join(" ");
+      await decoupeScene(a._sid,{extra});
+    }
+    m.state="applied";m.undo={scenes:[...scenes],shots:snap,target};
+    if(S.tab!=="dec")goTab("dec");
+  }catch(e){m.state="pending";writeErr(e);}
+  finally{COP.busy=false;drawCop();}
+}
+async function copUndo(m){
+  if(COP.busy||!m.undo)return;COP.busy=true;COP.busyText="Retour à la version précédente…";drawCop();
+  try{
+    const sc=new Set(m.undo.scenes);
+    await chunked(S.shots.filter(x=>sc.has(x.sceneId)),5,x=>shotDoc(x.id).delete());
+    await chunked(m.undo.shots,5,x=>{const{id,...d}=x;return S.db.doc(base()+"/shots/"+id).set(d);});
+    if(m.actions.some(a=>a.op==="target"))await S.db.doc("projects/"+S.pid).update({targetSec:m.undo.target.had||0});
+    m.state="undone";
+  }catch(e){writeErr(e);}
+  finally{COP.busy=false;drawCop();}
 }
 
 /* ---------- tabs + keyboard ---------- */
