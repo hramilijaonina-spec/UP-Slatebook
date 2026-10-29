@@ -505,6 +505,7 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
 .dct td.ed .dc-hl textarea{position:relative;z-index:1;color:transparent;caret-color:var(--fg);background:transparent!important;overflow-wrap:break-word}
 .dc-hl:hover .dc-hl-bg{background:color-mix(in srgb,var(--fg) 4%,transparent)}
 .dc-hl:focus-within .dc-hl-bg{background:var(--sunk)}
+.icbtn{padding:6px 8px}.icbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block}
 .dc-switch{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--fg);cursor:pointer;user-select:none;position:relative;white-space:nowrap}
 .dc-switch input{position:absolute;opacity:0;width:1px;height:1px}
 .dc-switch .tr{width:36px;height:20px;border-radius:10px;background:var(--line-strong);position:relative;transition:background .15s;flex:0 0 auto}
@@ -604,7 +605,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés */
-const APP_VERSION="1.5.2";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.6.0";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -687,7 +688,7 @@ class MemDB{
 
 /* ---------- state ---------- */
 const S={db:null,user:null,sample:null,room:null,dl:null,me:null,canWrite:true,canComment:true,role:null,local:false,
-  projects:[],projectsLoaded:false,pid:null,scenes:[],elements:[],comments:[],shots:[],assets:null,sid:null,tab:"scenes",
+  projects:[],projectsLoaded:false,pid:null,scenes:[],elements:[],comments:[],shots:[],backups:[],assets:null,sid:null,tab:"scenes",
   peers:[],busy:null,analyzing:new Set(),aiOff:false,filterCat:null,search:"",rpSearch:"",unsubP:[],holder:uid(),days:[],locations:[],planGroup:"lieu",dragging:null,pendingRender:false,modalRefresh:null};
 
 const P=()=>S.projects.find(p=>p.id===S.pid);
@@ -733,7 +734,7 @@ function showBanner(t){const b=$("#banner");b.textContent=t;b.hidden=false;}
 
 function openProject(pid){
   S.unsubP.forEach(u=>u());S.unsubP=[];
-  S.pid=pid;S.scenes=[];S.elements=[];S.comments=[];S.shots=[];S.days=[];S.locations=[];S.sid=null;store.set("upsb.pid",pid);DEC.view="edit";
+  S.pid=pid;S.scenes=[];S.elements=[];S.comments=[];S.shots=[];S.backups=[];S.days=[];S.locations=[];S.sid=null;store.set("upsb.pid",pid);DEC.view="edit";
   const pp=S.projects.find(p=>p.id===pid);if(pp)store.set("upsb.ep."+seriesKey(pp),pid);
   const b=base();const onErr=e=>toast("Synchronisation interrompue ("+e.code+")");
   S.unsubP.push(S.db.collection(b+"/scenes").onSnapshot(snap=>{
@@ -746,6 +747,7 @@ function openProject(pid){
   S.unsubP.push(S.db.collection(b+"/days").onSnapshot(snap=>{S.days=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr));
   S.unsubP.push(S.db.collection(b+"/locations").onSnapshot(snap=>{S.locations=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr));
   S.unsubP.push(S.db.collection(b+"/shots").onSnapshot(snap=>{S.shots=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr));
+  S.unsubP.push(S.db.collection(b+"/backups").onSnapshot(snap=>{S.backups=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr));
   sendPresence();render();
 }
 function selectScene(sid){S.sid=sid;store.set("upsb.sid."+S.pid,sid);sendPresence();S.tab="scenes";render();
@@ -1090,7 +1092,7 @@ function confirmDelete(){
   const p=P();const m=modal(`<h3>Supprimer « ${esc(p.name)} » ?</h3><p>Les ${S.scenes.length} scènes, ${S.elements.length} éléments, ${S.shots.length} plans du découpage et ${S.comments.length} commentaires seront supprimés pour toute l'équipe. Cette action est définitive.</p><div class="mfoot"><button class="btn" id="d-c">Annuler</button><button class="btn danger" id="d-ok">Supprimer définitivement</button></div>`);
   m.querySelector("#d-c").onclick=()=>m.remove();
   m.querySelector("#d-ok").onclick=async()=>{const b=m.querySelector("#d-ok");b.disabled=true;b.textContent="Suppression…";
-    const pid=p.id,bs="projects/"+pid;const all=[...S.scenes.map(x=>bs+"/scenes/"+x.id),...S.elements.map(x=>bs+"/elements/"+x.id),...S.comments.map(x=>bs+"/comments/"+x.id),...S.days.map(x=>bs+"/days/"+x.id),...S.locations.map(x=>bs+"/locations/"+x.id),...S.shots.map(x=>bs+"/shots/"+x.id)];
+    const pid=p.id,bs="projects/"+pid;const all=[...S.scenes.map(x=>bs+"/scenes/"+x.id),...S.elements.map(x=>bs+"/elements/"+x.id),...S.comments.map(x=>bs+"/comments/"+x.id),...S.days.map(x=>bs+"/days/"+x.id),...S.locations.map(x=>bs+"/locations/"+x.id),...S.shots.map(x=>bs+"/shots/"+x.id),...S.backups.map(x=>bs+"/backups/"+x.id)];
     try{await chunked(all,6,path=>S.db.doc(path).delete());await S.db.doc(bs).delete();store.set("upsb.pid","");S.unsubP.forEach(u=>u());S.unsubP=[];S.pid=null;m.remove();toast("Projet supprimé.");render();}
     catch(e){m.remove();writeErr(e);}};
 }
@@ -2156,6 +2158,8 @@ function decEditHTML(){
       <div class="stat"><b>${cut}<small> / ${S.scenes.length}</small></b><span>scènes découpées</span></div>
     </div>
     <div class="actions">
+      ${S.canWrite&&!S.aiOff?`<button class="btn icbtn" id="dc-sync" title="Mettre à jour le scénario d'après le découpage" aria-label="Mettre à jour le scénario d'après le découpage" ${S.busy||!S.shots.length?"disabled":""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20.5V16h-4.5"/></svg></button>`:""}
+      ${S.canWrite&&scriptBackup()?`<button class="btn ghost small" id="dc-unsync" title="Rétablir le scénario d'avant la dernière mise à jour">↶ Annuler la mise à jour du scénario</button>`:""}
       <label class="target">Durée cible <input type="text" id="dc-target" value="${tgt?esc(fmtDur(tgt)):""}" placeholder="2:30" inputmode="numeric" ${S.canWrite?"":"disabled"}></label>
       ${canAI?`<button class="btn primary" id="dc-ai" ${S.busy||!todo?"disabled":""} title="${todo?"Propose les plans des scènes pas encore découpées":"Toutes les scènes ont déjà des plans"}">Découper avec l'IA${todo&&todo<S.scenes.length?" · "+todo+" scène"+(todo>1?"s":""):""}</button>`:""}
       <label class="dc-switch" title="Afficher ou masquer les plans à 0 s"><input type="checkbox" role="switch" id="dc-opt" ${DEC.showOpt?"checked":""}><span class="tr" aria-hidden="true"></span>Plans optionnels${S.shots.some(isOpt)?" ("+S.shots.filter(isOpt).length+")":""}</label>
@@ -2197,7 +2201,7 @@ function shotRowHTML(x,i,seq){
 }
 function bindDec(box){
   const on=(id,fn)=>{const b=document.getElementById(id);if(b)b.onclick=fn;};
-  on("dc-ai",decoupeAll);on("dc-copy",copyDec);{const ex=$("#dc-export");if(ex)ex.onclick=e=>decExportMenu(e.currentTarget);}
+  on("dc-ai",decoupeAll);on("dc-copy",copyDec);on("dc-sync",confirmScriptSync);on("dc-unsync",confirmScriptUndo);{const ex=$("#dc-export");if(ex)ex.onclick=e=>decExportMenu(e.currentTarget);}
   const op=$("#dc-opt");if(op)op.onchange=()=>{DEC.showOpt=op.checked;store.set("upsb.dec.opt",op.checked?"1":"0");render();};
   const tg=$("#dc-target");if(tg)tg.onchange=()=>S.db.doc("projects/"+S.pid).update({targetSec:parseDur(tg.value)}).catch(writeErr);
   box.querySelectorAll(".dc-ai1").forEach(b=>b.onclick=()=>decoupeScene(b.dataset.sid));
@@ -2779,6 +2783,78 @@ async function buildDecPPTX(groups,imgs){
   });
   const blob=await pptx.write({outputType:"blob"});
   await save(slug(T.name)+"-decoupage.pptx",blob);
+}
+
+/* ---------- mettre à jour le scénario d'après le découpage (avec annulation) ---------- */
+const scriptBackup=()=>S.backups.find(b=>b.id==="script");
+function confirmScriptSync(){
+  const scs=S.scenes.filter(s=>shotsOf(s.id).some(x=>!isOpt(x)));
+  if(!scs.length){toast("Aucune scène n'a de plan : il n'y a rien à reporter dans le scénario.");return;}
+  const m=modal(`<h3>Mettre à jour le scénario ?</h3>
+    <p>Les ${scs.length} scène${scs.length>1?"s":""} qui ont des plans seront réécrite${scs.length>1?"s":""} d'après le découpage : ordre des actions, répliques de la colonne Audio, plans ajoutés ou supprimés. Les plans optionnels sont ignorés et les scènes sans plan ne changent pas.</p>
+    <p class="empty">Le scénario actuel est sauvegardé : le bouton « Annuler » du découpage le remet tel quel.</p>
+    <div class="mfoot"><button class="btn" id="ss-c">Annuler</button><button class="btn primary" id="ss-ok">Mettre à jour</button></div>`);
+  m.querySelector("#ss-c").onclick=()=>m.remove();
+  m.querySelector("#ss-ok").onclick=()=>{m.remove();syncScript(scs.map(s=>s.id));};
+}
+function syncPrompt(s,list){
+  const cut=v=>String(v||"").replace(/\s+/g," ").trim();
+  return `Tu es scénariste. Mets à jour cette scène de scénario pour qu'elle corresponde au découpage technique validé par le réalisateur.
+
+Règles :
+- Le résultat reste un scénario : pas de vocabulaire de découpage (plan serré, insert, travelling, valeur de plan, incrustation) sauf s'il figurait déjà dans le texte d'origine.
+- Les répliques de la colonne « son » du découpage font foi : reprends-les telles quelles, avec le nom du personnage ; une voix off s'écrit avec le personnage « NOM (OFF) ».
+- Les actions suivent l'ordre des plans. Retire ce qui n'est plus dans le découpage, ajoute ce qui est nouveau. Quand rien n'a changé, garde exactement les phrases du texte d'origine.
+- N'écris pas l'en-tête de scène (il ne change pas).
+
+Réponds uniquement avec ce JSON :
+{"blocks":[{"t":"a","x":"…"},{"t":"c","x":"SOA"},{"t":"p","x":"(face caméra)"},{"t":"d","x":"…"}]}
+Types : a action, c personnage, p didascalie, d dialogue, t transition.
+
+Texte actuel de la scène ${s.num} — ${s.heading} :
+${(s.body||bodyFromBlocks(sceneBlocks(s))||"").slice(0,14000)}
+
+Découpage (plans dans l'ordre : numéro | valeur | durée | action | son) :
+${list.map(x=>`${shotNum(x)} | ${SHOT_T[x.type]||x.type} | ${x.dur} s | ${cut(x.action)} | ${cut(x.sound)}`).join("\n")}`;
+}
+async function syncScript(sids){
+  if(S.busy)return;
+  await flushEditor();
+  const scs=sids.map(scene).filter(Boolean);
+  try{await S.db.doc(base()+"/backups/script").set({at:Date.now(),by:S.me?.id||null,scenes:scs.map(s=>({id:s.id,num:s.num,heading:s.heading,blocks:sceneBlocks(s),body:s.body||"",eighths:s.eighths||1}))});}
+  catch(e){writeErr(e);return;}
+  const ctl=new AbortController();S.busy={done:0,total:scs.length,ctl,label:"Scénario"};render();
+  let done=0,failed=[];
+  for(const s of scs){if(ctl.signal.aborted)break;
+    try{
+      const list=shotsOf(s.id).filter(x=>!isOpt(x));
+      let res;try{res=await S.sample.json(syncPrompt(s,list),{signal:ctl.signal});}
+      catch(e){if(e?.text){const j=String(e.text);try{res=JSON.parse(j.slice(j.indexOf("{"),j.lastIndexOf("}")+1));}catch{throw e;}}else throw e;}
+      const blocks=(Array.isArray(res?.blocks)?res.blocks:[]).filter(b=>b&&BT[b.t]&&b.t!=="h"&&typeof b.x==="string"&&b.x.trim())
+        .map(b=>({t:b.t,x:b.t==="c"||b.t==="t"||b.t==="s"?b.x.trim().toUpperCase():b.x.trim()}));
+      if(!blocks.length)throw{code:"vide"};
+      await S.db.doc(base()+"/scenes/"+s.id).update({blocks,body:bodyFromBlocks(blocks),eighths:Math.max(1,Math.round(sceneLines({blocks})/LINES_PER_PAGE*8)),updatedAt:Date.now(),updatedBy:S.me?.id||null});
+      ED.sigs.delete(s.id);done++;
+    }catch(e){const code=e?.code||"upstream_error";
+      if(code==="cancelled")break;
+      if(code==="no_key"||code==="bad_key"){window.DDC_openKey&&window.DDC_openKey(code==="bad_key");break;}
+      if(["rate_limited","no_credit","offline","not_granted","sampling_disabled","capability_disabled"].includes(code)){toast("Mise à jour interrompue ("+code+"). Les scènes déjà traitées sont gardées, annulables.",6000);break;}
+      failed.push(s.num);}
+    S.busy.done++;render();}
+  S.busy=null;render();
+  toast(done+" scène"+(done>1?"s":"")+" du scénario mise"+(done>1?"s":"")+" à jour"+(failed.length?" · échec pour la scène "+failed.join(", "):"")+". Tu peux annuler depuis le découpage.",6000);
+}
+function confirmScriptUndo(){
+  const b=scriptBackup();if(!b)return;
+  const when=new Date(b.at).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+  const m=modal(`<h3>Annuler la mise à jour du scénario ?</h3><p>Les ${b.scenes.length} scène${b.scenes.length>1?"s":""} modifiée${b.scenes.length>1?"s":""} le ${esc(when)} reprennent leur texte d'avant. Les changements faits depuis dans ces scènes seront perdus.</p>
+    <div class="mfoot"><button class="btn" id="su-c">Garder</button><button class="btn primary" id="su-ok">Rétablir l'ancien scénario</button></div>`);
+  m.querySelector("#su-c").onclick=()=>m.remove();
+  m.querySelector("#su-ok").onclick=async()=>{m.remove();
+    try{await flushEditor();
+      await chunked(b.scenes.filter(x=>scene(x.id)),5,x=>{ED.sigs.delete(x.id);return S.db.doc(base()+"/scenes/"+x.id).update({blocks:x.blocks,body:x.body,eighths:x.eighths,updatedAt:Date.now(),updatedBy:S.me?.id||null});});
+      await S.db.doc(base()+"/backups/script").delete();toast("Scénario rétabli.");}
+    catch(e){writeErr(e);}};
 }
 
 /* ---------- tabs + keyboard ---------- */
