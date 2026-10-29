@@ -604,7 +604,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés */
-const APP_VERSION="1.4.3";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.5.0";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -1053,6 +1053,8 @@ function exportMenu(anchor){
     {label:"Liste des éléments (CSV pour Excel)",run:exportCSV},
     {label:"Plan de travail (HTML imprimable)",run:exportPlanHTML},
     {label:"Plan de travail (CSV pour Excel)",run:exportPlanCSV},
+    {label:"Découpage technique (PDF paysage)",run:()=>runDecExport("pdf")},
+    {label:"Découpage technique (PowerPoint paysage)",run:()=>runDecExport("pptx")},
     {label:"Découpage technique (CSV pour Excel)",run:exportDecCSV}]);
 }
 
@@ -2157,7 +2159,7 @@ function decEditHTML(){
       <label class="target">Durée cible <input type="text" id="dc-target" value="${tgt?esc(fmtDur(tgt)):""}" placeholder="2:30" inputmode="numeric" ${S.canWrite?"":"disabled"}></label>
       ${canAI?`<button class="btn primary" id="dc-ai" ${S.busy||!todo?"disabled":""} title="${todo?"Propose les plans des scènes pas encore découpées":"Toutes les scènes ont déjà des plans"}">Découper avec l'IA${todo&&todo<S.scenes.length?" · "+todo+" scène"+(todo>1?"s":""):""}</button>`:""}
       <label class="dc-switch" title="Afficher ou masquer les plans à 0 s"><input type="checkbox" role="switch" id="dc-opt" ${DEC.showOpt?"checked":""}><span class="tr" aria-hidden="true"></span>Plans optionnels${S.shots.some(isOpt)?" ("+S.shots.filter(isOpt).length+")":""}</label>
-      ${S.dl?`<button class="btn" id="dc-csv" ${S.shots.length?"":"disabled"}>Exporter CSV</button>`:""}
+      ${S.dl?`<button class="btn" id="dc-export" ${S.shots.length?"":"disabled"}>Exporter</button>`:""}
       <button class="btn" id="dc-copy" ${S.shots.length?"":"disabled"}>Copier le tableau</button>
     </div></div>`;
   const note=!S.shots.length?`<div class="dc-note"><b>Le découpage est vide.</b> Ajoute les plans scène par scène avec « + Ajouter un plan »${canAI?", ou clique sur <b>Découper avec l'IA</b> pour une première proposition plan par plan":""}. Clique ensuite sur une cellule pour la modifier.</div>`:"";
@@ -2195,7 +2197,7 @@ function shotRowHTML(x,i,seq){
 }
 function bindDec(box){
   const on=(id,fn)=>{const b=document.getElementById(id);if(b)b.onclick=fn;};
-  on("dc-ai",decoupeAll);on("dc-csv",exportDecCSV);on("dc-copy",copyDec);
+  on("dc-ai",decoupeAll);on("dc-copy",copyDec);{const ex=$("#dc-export");if(ex)ex.onclick=e=>decExportMenu(e.currentTarget);}
   const op=$("#dc-opt");if(op)op.onchange=()=>{DEC.showOpt=op.checked;store.set("upsb.dec.opt",op.checked?"1":"0");render();};
   const tg=$("#dc-target");if(tg)tg.onchange=()=>S.db.doc("projects/"+S.pid).update({targetSec:parseDur(tg.value)}).catch(writeErr);
   box.querySelectorAll(".dc-ai1").forEach(b=>b.onclick=()=>decoupeScene(b.dataset.sid));
@@ -2454,14 +2456,14 @@ function openThumb(x){
 }
 
 /* aperçu : export et copie */
-function decRows(){
+function decRows(forExport){
   const out=[["#SÉQ","#PLAN","DESCRIPTION","AUDIO","CAMÉRA","VIGNETTE","NOTES","DURÉE (s)"]];
-  for(const s of S.scenes)for(const x of shotsOf(s.id).filter(x=>DEC.showOpt||!isOpt(x)))out.push([s.num+" – "+s.heading,shotNum(x)+(isOpt(x)?" (optionnel)":""),x.action||"",x.sound||"",
+  for(const s of S.scenes)for(const x of shotsOf(s.id).filter(x=>forExport?!isOpt(x):DEC.showOpt||!isOpt(x)))out.push([s.num+" – "+s.heading,shotNum(x)+(isOpt(x)?" (optionnel)":""),x.action||"",x.sound||"",
     [SHOT_T[x.type]||x.type,x.move,x.angle].concat(x.effect&&x.effect!=="—"?[x.effect]:[]).filter(Boolean).join(" – "),
     (x.type||"")+" – "+(SHOT_T[x.type]||"")+(x.img?" (photo)":""),x.notes||"",String(x.dur??"").replace(".",",")]);
   return out;
 }
-function exportDecCSV(){const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';save(slug(P()?.name)+"-decoupage.csv","﻿"+decRows().map(r=>r.map(q).join(";")).join("\r\n"));}
+function exportDecCSV(){const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';save(slug(P()?.name)+"-decoupage.csv","﻿"+decRows(true).map(r=>r.map(q).join(";")).join("\r\n"));}
 function copyDec(){
   const tsv=decRows().map(r=>r.map(c=>String(c??"").replace(/\t/g," ").replace(/\n/g," / ")).join("\t")).join("\n");
   const ok=()=>toast("Tableau copié : colle-le dans Sheets ou Excel.");
@@ -2667,6 +2669,103 @@ async function copUndo(m){
     m.state="undone";
   }catch(e){writeErr(e);}
   finally{COP.busy=false;drawCop();}
+}
+
+/* ---------- export du découpage : PDF ou PowerPoint, paysage, sans les plans optionnels ---------- */
+const LIBS={jspdf:"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",autotable:"https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js",pptx:"https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"};
+const libP={};
+function loadLib(k){return libP[k]||(libP[k]=new Promise((res,rej)=>{const s=document.createElement("script");s.src=LIBS[k];s.onload=res;s.onerror=()=>{delete libP[k];rej({code:"lib"});};document.head.append(s);}));}
+function decExportMenu(anchor){
+  openPop(anchor.getBoundingClientRect(),"Exporter le découpage (sans les plans optionnels)",[
+    {label:"PDF · paysage",run:()=>runDecExport("pdf")},
+    {label:"PowerPoint (.pptx) · paysage",run:()=>runDecExport("pptx")},
+    {label:"CSV pour Excel",run:exportDecCSV}]);
+}
+function exportGroups(){
+  return S.scenes.map(s=>({s,list:shotsOf(s.id).filter(x=>!isOpt(x))})).filter(g=>g.list.length);
+}
+const camLine=x=>[SHOT_T[x.type]||x.type,x.move,x.angle].concat(x.effect&&x.effect!=="—"?[x.effect]:[]).filter(Boolean).join("\n");
+const durTxt=x=>String(x.dur??"").replace(".",",")+" s";
+/* vignettes en images : croquis redessiné en clair, ou photo du plan */
+function exportPictoSVG(t){
+  return picto(t).replace("<svg ",'<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" ')
+    .replace(/class="dc-fig"/g,'fill="#2b2f33" stroke="#2b2f33" stroke-width="5" stroke-linecap="round"')
+    .replace(/class="eye"/g,'fill="#e9e6e1" stroke="none"').replace(/class="dc-ground"/g,'stroke="#9a9a9a" stroke-width="1.2" fill="none"')
+    .replace(/class="dc-bld"/g,'fill="#b9bdc1"').replace(/class="dc-roof"/g,'fill="#8d9399"').replace(/class="dc-ph"/g,'fill="#2b2f33"')
+    .replace(/class="dc-scr"/g,'fill="#f0a030"').replace(/class="dc-ln"/g,'fill="#ffffff"');
+}
+function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src;});}
+async function shotImage(x){
+  const c=document.createElement("canvas");c.width=480;c.height=270;const g=c.getContext("2d");g.fillStyle="#e9e6e1";g.fillRect(0,0,480,270);
+  try{
+    if(x.img){const im=await loadImg(imgSrcOf(x.img));const k=Math.max(480/im.naturalWidth,270/im.naturalHeight);const w=im.naturalWidth*k,h=im.naturalHeight*k;g.drawImage(im,(480-w)/2,(270-h)/2,w,h);}
+    else throw 0;
+  }catch{const im=await loadImg("data:image/svg+xml;charset=utf-8,"+encodeURIComponent(exportPictoSVG(x.type)));g.fillStyle="#e9e6e1";g.fillRect(0,0,480,270);g.drawImage(im,0,0,480,270);}
+  return c.toDataURL("image/jpeg",0.85);
+}
+const imgSrcOf=v=>/^data:image\//.test(String(v||""))?v:"/_blob/"+v;
+async function runDecExport(kind){
+  const groups=exportGroups();if(!groups.length){toast("Aucun plan à exporter (les plans optionnels ne sont pas exportés).");return;}
+  if(!S.dl){toast("L'export n'est pas disponible ici.");return;}
+  toast(kind==="pdf"?"Préparation du PDF…":"Préparation du PowerPoint…",2500);
+  try{
+    await loadLib(kind==="pdf"?"jspdf":"pptx");if(kind==="pdf")await loadLib("autotable");
+    const imgs=new Map();for(const g of groups)for(const x of g.list)imgs.set(x.id,await shotImage(x));
+    if(kind==="pdf")await buildDecPDF(groups,imgs);else await buildDecPPTX(groups,imgs);
+  }catch(e){toast(e?.code==="lib"?"Impossible de charger l'outil d'export. Vérifie la connexion internet.":"L'export a échoué ("+(e?.code||e?.message||"erreur")+").",5000);}
+}
+function exportTitle(groups){
+  const n=groups.reduce((a,g)=>a+g.list.length,0),d=groups.reduce((a,g)=>a+sumDur(g.list),0);
+  return{name:P()?.name||"Découpage",meta:n+" plan"+(n>1?"s":"")+" · "+fmtDur(d)+" · "+new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})};
+}
+async function buildDecPDF(groups,imgs){
+  const{jsPDF}=window.jspdf;const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+  const T=exportTitle(groups);const order=[];const body=[];
+  for(const g of groups){const s=g.s;
+    g.list.forEach((x,i)=>{const row=[];
+      if(i===0)row.push({content:s.num+"\n"+s.heading+"\n"+g.list.length+" plan"+(g.list.length>1?"s":"")+" · "+fmtDur(sumDur(g.list)),rowSpan:g.list.length});
+      row.push(shotNum(x)+"\n"+durTxt(x),x.action||"",x.sound||"",camLine(x),"",x.notes||"");body.push(row);order.push(x.id);});}
+  doc.autoTable({
+    head:[["#Séq","#Plan","Description","Audio","Caméra","Vignette","Notes"]],body,startY:20,
+    margin:{left:10,right:10,top:20,bottom:13},theme:"grid",rowPageBreak:"avoid",
+    styles:{font:"helvetica",fontSize:8,cellPadding:1.8,valign:"top",lineColor:[205,205,205],lineWidth:0.2,textColor:[25,25,25],overflow:"linebreak"},
+    headStyles:{fillColor:[240,160,48],textColor:[35,18,0],fontStyle:"bold"},
+    columnStyles:{0:{cellWidth:30,fillColor:[246,244,240],fontStyle:"bold"},1:{cellWidth:14,fontStyle:"bold"},2:{cellWidth:62},3:{cellWidth:54},4:{cellWidth:30},5:{cellWidth:38,minCellHeight:23},6:{cellWidth:"auto",textColor:[90,90,90]}},
+    didDrawCell:d=>{if(d.section==="body"&&d.column.index===5){const im=imgs.get(order[d.row.index]);if(im){const w=d.cell.width-3;doc.addImage(im,"JPEG",d.cell.x+1.5,d.cell.y+1.5,w,w*9/16);}}},
+    didDrawPage:()=>{doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(25,25,25);doc.text("Découpage technique · "+T.name,10,12);
+      doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(110,110,110);doc.text(T.meta,287,12,{align:"right"});}
+  });
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(130,130,130);doc.text("UP Slatebook · page "+i+" / "+n,287,203,{align:"right"});}
+  await save(slug(T.name)+"-decoupage.pdf",doc.output("blob"));
+}
+async function buildDecPPTX(groups,imgs){
+  const pptx=new window.PptxGenJS();pptx.layout="LAYOUT_WIDE";pptx.title="Découpage technique";
+  const T=exportTitle(groups);
+  const W=[1.25,0.65,3.3,2.9,1.45,1.55,1.63];const X0=0.3,TOP=0.85,MAXY=7.15,HEAD=0.32,FS=9,LH=0.155;
+  const xOf=k=>X0+W.slice(0,k).reduce((a,b)=>a+b,0);
+  const lines=(txt,w)=>{const cpl=Math.max(6,Math.floor((w-0.12)*72/(FS*0.52)));return String(txt||"").split("\n").reduce((a,l)=>a+Math.max(1,Math.ceil(l.length/cpl)),0);};
+  const flat=[];for(const g of groups)for(const x of g.list){
+    const h=Math.max(0.98,0.14+LH*Math.max(lines(x.action,W[2]),lines(x.sound,W[3]),lines(x.notes,W[6]),lines(camLine(x),W[4]),2));flat.push({g,x,h});}
+  const pages=[];let cur=[],y=TOP+HEAD;
+  for(const r of flat){if(cur.length&&y+r.h>MAXY){pages.push(cur);cur=[];y=TOP+HEAD;}cur.push(r);y+=r.h;}
+  if(cur.length)pages.push(cur);
+  const hd=t=>({text:t,options:{bold:true,fill:{color:"F0A030"},color:"231200",fontSize:9}});
+  pages.forEach((rows,pi)=>{
+    const sl=pptx.addSlide();sl.background={color:"FFFFFF"};
+    sl.addText("Découpage technique · "+T.name,{x:X0,y:0.2,w:8.4,h:0.45,fontFace:"Arial",fontSize:16,bold:true,color:"191919",margin:0,fit:"shrink"});
+    sl.addText(T.meta+"  ·  page "+(pi+1)+" / "+pages.length,{x:8.8,y:0.2,w:4.23,h:0.45,fontFace:"Arial",fontSize:10,color:"6E6E6E",align:"right",margin:0});
+    const tbl=[["#Séq","#Plan","Description","Audio","Caméra","Vignette","Notes"].map(hd)];
+    rows.forEach((r,i)=>{const row=[];
+      if(i===0||rows[i-1].g!==r.g){const span=rows.filter(z=>z.g===r.g).length;const s=r.g.s;
+        row.push({text:s.num+"\n"+s.heading+"\n"+r.g.list.length+" plans · "+fmtDur(sumDur(r.g.list)),options:{rowspan:span,bold:true,fill:{color:"F6F4F0"},fontSize:8.5}});}
+      row.push({text:shotNum(r.x)+"\n"+durTxt(r.x),options:{bold:true}},{text:r.x.action||""},{text:r.x.sound||""},{text:camLine(r.x)},{text:""},{text:r.x.notes||"",options:{color:"5A5A5A"}});
+      tbl.push(row);});
+    sl.addTable(tbl,{x:X0,y:TOP,w:W.reduce((a,b)=>a+b,0),colW:W,rowH:[HEAD,...rows.map(r=>r.h)],fontFace:"Arial",fontSize:FS,color:"191919",valign:"top",margin:0.05,border:{type:"solid",pt:0.5,color:"C8C8C8"},autoPage:false});
+    let yy=TOP+HEAD;for(const r of rows){const im=imgs.get(r.x.id);if(im)sl.addImage({data:im,x:xOf(5)+0.06,y:yy+0.06,w:W[5]-0.12,h:(W[5]-0.12)*9/16});yy+=r.h;}
+  });
+  const blob=await pptx.write({outputType:"blob"});
+  await save(slug(T.name)+"-decoupage.pptx",blob);
 }
 
 /* ---------- tabs + keyboard ---------- */
