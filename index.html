@@ -648,6 +648,14 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
   #clap .cl-tog{padding:1px 8px;font-size:min(14px,3.6vh)}
 }
 @media (prefers-reduced-motion:reduce){#clap .cl-top,#clap .cl-slate{transition:none}}
+/* prise cerclée */
+#clap .cl-lblrow{display:flex;align-items:center;justify-content:space-between;gap:6px}
+#clap .cl-heart{border:0;background:none;padding:0 2px;font-size:22px;line-height:1;filter:grayscale(1);opacity:.35;transition:opacity .15s,transform .15s}
+#clap .cl-heart[aria-pressed="true"]{filter:none;opacity:1;transform:scale(1.12)}
+#clap .cl-takewrap{position:relative;flex:1;min-width:0;display:grid;place-items:center;font-size:clamp(34px,8vw,76px)}
+#clap .cl-takewrap::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--n,1) * .62em + .95em);height:1.32em;border:3px solid var(--cl-led);border-radius:50%;transform:translate(-50%,-50%) rotate(-7deg);opacity:0;pointer-events:none;transition:opacity .15s}
+#clap .a-take.circled .cl-takewrap::after{opacity:1}
+@media (orientation:landscape) and (max-height:560px){#clap .cl-takewrap{font-size:min(56px,11vh);font-size:min(56px,11dvh)}#clap .cl-heart{font-size:18px}}
 /* grille du clap : traits par l'espacement, zones nommées */
 #clap .cl-board{gap:2px;background:var(--cl-line);overflow:hidden;
   grid-template-areas:"prod prod prod date" "roll scene plan take" "dir dir dop dop" "cam son info info"}
@@ -698,8 +706,8 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
         <div class="cl-cell cl-big a-roll"><label class="cl-lbl" for="cl-roll">Roll</label><input id="cl-roll" placeholder="A001" autocomplete="off"></div>
         <div class="cl-cell cl-big a-scene"><label class="cl-lbl" for="cl-scene">Scène</label><input id="cl-scene" list="cl-scenes" placeholder="1" autocomplete="off"></div>
         <div class="cl-cell cl-big a-plan"><label class="cl-lbl" for="cl-plan">Plan</label><input id="cl-plan" list="cl-plans" placeholder="1" autocomplete="off"></div>
-        <div class="cl-cell cl-big a-take"><span class="cl-lbl">Prise</span>
-          <div class="cl-row"><button class="cl-step" id="cl-tminus" type="button" aria-label="Prise précédente">−</button><input id="cl-take" inputmode="numeric" placeholder="1" autocomplete="off" aria-label="Prise"><button class="cl-step" id="cl-tplus" type="button" aria-label="Prise suivante">+</button></div></div>
+        <div class="cl-cell cl-big a-take" id="cl-takecell"><div class="cl-lblrow"><span class="cl-lbl">Prise</span><button class="cl-heart" id="cl-heart" type="button" aria-pressed="false" aria-label="Prise cerclée" title="Prise cerclée">❤️</button></div>
+          <div class="cl-row"><button class="cl-step" id="cl-tminus" type="button" aria-label="Prise précédente">−</button><span class="cl-takewrap" id="cl-takewrap"><input id="cl-take" inputmode="numeric" placeholder="1" autocomplete="off" aria-label="Prise"></span><button class="cl-step" id="cl-tplus" type="button" aria-label="Prise suivante">+</button></div></div>
         <div class="cl-cell a-dir"><label class="cl-lbl" for="cl-dir">Réalisateur</label><input id="cl-dir" placeholder="Nom" autocomplete="off"></div>
         <div class="cl-cell a-dop"><label class="cl-lbl" for="cl-dop">Chef opérateur</label><input id="cl-dop" placeholder="Nom" autocomplete="off"></div>
         <div class="cl-cell a-cam"><label class="cl-lbl" for="cl-cam">Caméra</label><input id="cl-cam" placeholder="A" autocomplete="off"></div>
@@ -713,7 +721,7 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
       <select id="cl-fps" aria-label="Cadence"><option value="23.976">23.976</option><option value="24">24</option><option value="25" selected>25</option><option value="29.97">29.97</option><option value="30">30</option><option value="50">50</option></select>
       <label class="cl-st"><input type="checkbox" id="cl-beep" checked> Bip</label>
       <button class="cl-btn" id="cl-test" type="button">Tester le son</button>
-      <span class="cl-st" id="cl-audio">Son : touche l’écran</span>
+      <span class="cl-st" id="cl-audio">Son : appuie sur Tester</span>
       <span class="cl-st" id="cl-remote">Déclencheur : écran</span>
       <span class="cl-sp"></span>
       <button class="cl-btn" id="cl-fs" type="button">Plein écran</button>
@@ -748,8 +756,8 @@ const CATS=[
  {id:"equipment",label:"Matériel spécial",color:"#5d6b7a"},
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
-/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap */
-const APP_VERSION="1.7.1";const APP_DATE="29 oct. 2026";
+/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média */
+const APP_VERSION="1.7.2";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -3029,17 +3037,27 @@ boot();
   const get=(k,d)=>{try{const v=localStorage.getItem(K(k));return v==null?d:JSON.parse(v);}catch(e){return d;}};
   const put=(k,v)=>{try{localStorage.setItem(K(k),JSON.stringify(v));}catch(e){}};
   const cur=()=>{try{return typeof P==="function"?P():null;}catch(e){return null;}};
+  /* prises cerclées : « scène|plan|prise », une liste par projet sur cet appareil */
+  let circ=new Set();
+  const circKey=()=>"circ."+((typeof S!=="undefined"&&S.pid)||"libre");
+  const ck=(sc,pl,tk)=>String(sc||"").trim()+"|"+String(pl||"").trim()+"|"+String(tk||"").trim();
+  const curKey=()=>ck(g("cl-scene").value,g("cl-plan").value,g("cl-take").value);
+  function paintCircle(){const on=circ.has(curKey());g("cl-heart").setAttribute("aria-pressed",on?"true":"false");
+    g("cl-takecell").classList.toggle("circled",on);g("cl-takewrap").style.setProperty("--n",Math.max(1,String(g("cl-take").value).trim().length));}
 
   /* champs */
   const F=["prod","roll","scene","plan","take","dir","dop","cam","son"];
   const DEF={prod:"",roll:"A001",scene:"1",plan:"1",take:"1",dir:"",dop:"",cam:"A",son:""};
   F.forEach(f=>{const el=g("cl-"+f);el.value=get(f,DEF[f]);el.addEventListener("input",()=>put(f,el.value));});
-  const setTake=n=>{n=Math.max(1,n|0);g("cl-take").value=n;put("take",String(n));};
+  const setTake=n=>{n=Math.max(1,n|0);g("cl-take").value=n;put("take",String(n));paintCircle();};
   g("cl-tplus").onclick=()=>setTake((parseInt(g("cl-take").value)||0)+1);
   g("cl-tminus").onclick=()=>setTake((parseInt(g("cl-take").value)||2)-1);
   /* nouveau plan ou nouvelle scène : on repart à la prise 1 */
   g("cl-scene").addEventListener("change",()=>{fillPlans();setTake(1);});
   g("cl-plan").addEventListener("change",()=>setTake(1));
+  ["cl-scene","cl-plan","cl-take"].forEach(id=>g(id).addEventListener("input",paintCircle));
+  g("cl-heart").onclick=()=>{const k=curKey();if(circ.has(k))circ.delete(k);else circ.add(k);put(circKey(),[...circ]);paintCircle();renderLog();
+    try{if(navigator.vibrate)navigator.vibrate(circ.has(k)?[20,40,20]:15);}catch(e){}};
   const today=()=>{const d=new Date();return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+String(d.getFullYear()).slice(2);};
 
   /* bascules */
@@ -3076,28 +3094,39 @@ boot();
   const tcEl=g("cl-tc");let frozenUntil=0,last="",raf=0;
   function tick(){const now=Date.now();if(now>=frozenUntil){g("cl-tcbar").classList.remove("frozen");const s=tcAt(now);if(s!==last){tcEl.textContent=s;last=s;}}raf=requestAnimationFrame(tick);}
 
-  /* son : claquement + bip 1 kHz */
+  /* son : claquement + bip 1 kHz. Lecteur média d'abord (il joue même avec le bouton silencieux de l'iPhone), Web Audio en secours */
   try{if(navigator.audioSession)navigator.audioSession.type="playback";}catch(e){}
-  let ac=null,noise=null,unlocked=false,silentEl=null;
-  function silentWav(){const n=800,b=new ArrayBuffer(44+n*2),v=new DataView(b);const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  const SR=44100;
+  function wav(beep){
+    const n=Math.floor(SR*(beep?0.3:0.09)),b=new ArrayBuffer(44+n*2),v=new DataView(b);const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
     w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
-    v.setUint32(24,8000,true);v.setUint32(28,16000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+    v.setUint32(24,SR,true);v.setUint32(28,SR*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+    const nl=Math.floor(SR*0.08),bl=Math.floor(SR*0.25),fade=Math.floor(SR*0.02);
+    for(let i=0;i<n;i++){let x=0;if(i<nl)x+=(Math.random()*2-1)*Math.pow(1-i/nl,5);
+      if(beep&&i<bl+fade){const env=i<88?i/88:i>bl?Math.max(0,1-(i-bl)/fade):1;x+=0.6*env*Math.sin(2*Math.PI*1000*i/SR);}
+      v.setInt16(44+i*2,Math.round(Math.max(-1,Math.min(1,x))*32000),true);}
     return URL.createObjectURL(new Blob([b],{type:"audio/wav"}));}
+  const players={};
+  function player(beep){const k=beep?"b":"n";if(!players[k]){const a=new Audio(wav(beep));a.preload="auto";a.setAttribute("playsinline","");try{a.load();}catch(e){}players[k]=a;}return players[k];}
+  let mode="",ac=null,noise=null;
   function ctx(){if(!ac){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ac=new C({latencyHint:"interactive"});
       const len=Math.floor(ac.sampleRate*0.08);noise=ac.createBuffer(1,len,ac.sampleRate);const ch=noise.getChannelData(0);for(let i=0;i<len;i++)ch[i]=(Math.random()*2-1)*Math.pow(1-i/len,5);}
     return ac;}
-  const audioStatus=()=>{g("cl-audio").textContent=ac&&ac.state==="running"?"Son : prêt":"Son : touche l’écran";};
-  function unlock(){if(box.hidden)return;const c=ctx();if(!c)return;
-    try{if(!silentEl){silentEl=new Audio(silentWav());silentEl.setAttribute("playsinline","");}const pr=silentEl.play();if(pr&&pr.catch)pr.catch(()=>{});}catch(e){}
-    c.resume().then(()=>{if(!unlocked){const s=c.createBufferSource();s.buffer=c.createBuffer(1,1,22050);s.connect(c.destination);s.start(0);unlocked=true;}audioStatus();}).catch(audioStatus);}
-  ["pointerdown","touchend","keydown"].forEach(ev=>box.addEventListener(ev,unlock,{passive:true}));
-  function play(c){const t=c.currentTime+0.005;
-    const src=c.createBufferSource();src.buffer=noise;src.connect(c.destination);src.start(t);
-    if(g("cl-beep").checked){const o=c.createOscillator(),og=c.createGain();o.type="sine";o.frequency.value=1000;
-      og.gain.setValueAtTime(0,t);og.gain.linearRampToValueAtTime(0.9,t+0.002);og.gain.setValueAtTime(0.9,t+0.25);og.gain.linearRampToValueAtTime(0,t+0.27);
-      o.connect(og).connect(c.destination);o.start(t);o.stop(t+0.3);}}
-  function sound(){const c=ctx();if(!c)return;try{if(c.state==="running")play(c);else c.resume().then(()=>{play(c);audioStatus();}).catch(()=>{});}catch(e){}}
-  g("cl-test").onclick=()=>{unlock();sound();};
+  function playWeb(){const c=ctx();if(!c)return Promise.reject(0);
+    return(c.state==="running"?Promise.resolve():c.resume()).then(()=>{if(c.state!=="running")throw 0;const t=c.currentTime+0.005;
+      const src=c.createBufferSource();src.buffer=noise;src.connect(c.destination);src.start(t);
+      if(g("cl-beep").checked){const o=c.createOscillator(),og=c.createGain();o.type="sine";o.frequency.value=1000;
+        og.gain.setValueAtTime(0,t);og.gain.linearRampToValueAtTime(0.9,t+0.002);og.gain.setValueAtTime(0.9,t+0.25);og.gain.linearRampToValueAtTime(0,t+0.27);
+        o.connect(og).connect(c.destination);o.start(t);o.stop(t+0.3);}});}
+  function playMedia(){const a=player(g("cl-beep").checked);try{a.pause();a.currentTime=0;}catch(e){}const pr=a.play();return pr&&pr.then?pr:Promise.resolve();}
+  const audioStatus=t=>{g("cl-audio").textContent=t;};
+  function sound(){
+    if(mode==="webaudio"){playWeb().catch(()=>audioStatus("Son : bloqué"));return;}
+    playMedia().then(()=>{mode="media";audioStatus("Son : prêt");})
+      .catch(()=>playWeb().then(()=>{mode="webaudio";audioStatus("Son : prêt");}).catch(()=>audioStatus("Son : bloqué · vérifie le volume")));}
+  function unlock(){if(box.hidden)return;player(true);player(false);}
+  ["pointerup","touchend","keydown"].forEach(ev=>box.addEventListener(ev,unlock,{passive:true}));
+  g("cl-test").onclick=()=>sound();
 
   /* journal, un par projet, gardé sur cet appareil */
   const logKey=()=>"log."+((typeof S!=="undefined"&&S.pid)||"libre");
@@ -3106,12 +3135,12 @@ boot();
     if(!log.length){const li=document.createElement("li");li.className="cl-empty";li.textContent="Aucun clap pour l’instant. Touche la claquette ou le timecode pour marquer une prise.";ol.append(li);return;}
     log.slice().reverse().forEach(e=>{const li=document.createElement("li");
       const a=document.createElement("span");a.className="k";a.textContent=e.tc;
-      const b=document.createElement("span");b.textContent="S"+e.scene+" · P"+e.plan+" · T"+e.take+" · "+e.cam+" / "+e.roll+(e.son&&!e.mos?" · son "+e.son:"");
+      const b=document.createElement("span");b.textContent=(circ.has(ck(e.scene,e.plan,e.take))?"❤️ ":"")+"S"+e.scene+" · P"+e.plan+" · T"+e.take+" · "+e.cam+" / "+e.roll+(e.son&&!e.mos?" · son "+e.son:"");
       const c=document.createElement("span");c.className="f";c.textContent=[e.mos?"MOS":"",e.tail?"QUEUE":""].filter(Boolean).join(" ")||e.fps;
       li.append(a,b,c);ol.append(li);});}
   function csv(){const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-    const head=["date","timecode","ips","production","scene","plan","prise","camera","roll","son","int_ext","jour_nuit","mos","queue"];
-    return[head.join(";")].concat(log.map(e=>[e.date,e.tc,e.fps,e.prod,e.scene,e.plan,e.take,e.cam,e.roll,e.son||"",e.ie,e.dn,e.mos?1:0,e.tail?1:0].map(q).join(";"))).join("\n");}
+    const head=["date","timecode","ips","production","scene","plan","prise","camera","roll","son","int_ext","jour_nuit","mos","queue","cerclee"];
+    return[head.join(";")].concat(log.map(e=>[e.date,e.tc,e.fps,e.prod,e.scene,e.plan,e.take,e.cam,e.roll,e.son||"",e.ie,e.dn,e.mos?1:0,e.tail?1:0,circ.has(ck(e.scene,e.plan,e.take))?1:0].map(q).join(";"))).join("\n");}
   g("cl-copylog").onclick=()=>{const text=csv(),tb=g("cl-copybox"),btn=g("cl-copylog");
     const fb=()=>{tb.hidden=false;tb.value=text;tb.focus();tb.select();btn.textContent="Sélectionné";};
     try{navigator.clipboard.writeText(text).then(()=>{btn.textContent="Copié";setTimeout(()=>btn.textContent="Copier CSV",1500);},fb);}catch(e){fb();}};
@@ -3159,6 +3188,7 @@ boot();
   /* ouvrir / fermer */
   function open(){
     syncProject();g("cl-date").value=today();
+    circ=new Set(get(circKey(),[]));paintCircle();
     log=get(logKey(),[]);renderLog();
     box.hidden=false;document.documentElement.style.overflow="hidden";
     if(!raf)raf=requestAnimationFrame(tick);
