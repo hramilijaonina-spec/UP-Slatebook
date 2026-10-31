@@ -348,7 +348,7 @@ R('/* menu principal */', '''/* en-tête : recherche, mode local, bandeau */
   body.hdr-hide .top,body.hdr-hide .projbar{display:none}
   .banner{padding-block:4px;font-size:12px}
   /* découpage : une carte par plan */
-  .dct-wrap{border:0;background:transparent;overflow:visible;margin-top:10px}
+  .dc .dct-wrap{border:0;background:transparent;overflow:visible;margin-top:10px}
   table.dct,.dct tbody{display:block!important;width:100%!important;min-width:0!important}
   .dct thead{display:none}
   .dct tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"seq seq" "thumb thumb" "plan cam" "desc desc" "audio audio" "notes notes";border:1px solid var(--line);border-radius:10px;margin:0 0 10px;overflow:hidden;background:var(--surface)}
