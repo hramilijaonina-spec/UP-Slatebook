@@ -239,7 +239,10 @@ tr.catrow td{background:var(--sunk);font-weight:600;font-size:12.5px}
 .vlist em.vcur{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:10px;background:color-mix(in srgb,var(--ok) 22%,transparent);color:var(--ok);font-style:normal;font-size:11.5px;font-weight:700;vertical-align:2px}
 .vlist strong{display:block;font-size:13.5px}
 .savest{font-size:12px;color:var(--muted);white-space:nowrap}
-@media (max-width:560px){.vlist div{grid-template-columns:40px minmax(0,1fr)}.vlist div .btn{grid-column:2;justify-self:start}}
+.vlist .vact{display:flex;gap:6px;align-items:center}
+.vlist .vdel{padding:3px 6px;line-height:0}.vlist .vdel svg{width:16px;height:16px;fill:currentColor}
+.vlist .vdel:hover{color:var(--danger);border-color:var(--danger)}
+@media (max-width:560px){.vlist div{grid-template-columns:40px minmax(0,1fr)}.vlist .vact{grid-column:2;justify-self:start}}
 .vlist div:last-child{border-bottom:0}
 .vlist b{font-family:var(--f-display);font-size:18px;line-height:1.1}
 .vlist small{color:var(--muted);display:block}
@@ -778,7 +781,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage */
-const APP_VERSION="1.9.1";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.9.2";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -3333,6 +3336,18 @@ async function restoreSnapshot(meta){
   }catch(e){toast("Le retour à cette version a échoué ("+(e?.code||"erreur")+"). Rien n'a été perdu : l'état d'avant est dans la liste des versions.",6000);}
   finally{S.busy=null;S.restoring=false;if(!ok)SNAP.lastHash=null;render();}
 }
+async function snapDelete(s){
+  for(let i=0;i<(s.parts||1);i++)await S.db.doc(base()+"/snapparts/"+s.id+"_"+i).delete();
+  await S.db.doc(base()+"/snapshots/"+s.id).delete();
+}
+function confirmSnapDelete(s){
+  const c=modal(`<h3>Supprimer cette version ?</h3><p><b>v${s.n||1} · ${esc(snapTitle(s))}</b> du ${esc(fmtWhen(s.at))} sera supprimée pour toute l'équipe. On ne pourra plus y revenir.</p>
+    ${s.named?`<p class="empty">C'est une version nommée. Le numéro v${s.n||1} ne sera pas réutilisé.</p>`:""}
+    <div class="mfoot"><button class="btn" id="sd-c">Annuler</button><button class="btn danger" id="sd-ok">Supprimer</button></div>`);
+  c.querySelector("#sd-c").onclick=()=>c.remove();
+  c.querySelector("#sd-ok").onclick=async()=>{const b=c.querySelector("#sd-ok");b.disabled=true;
+    try{await snapDelete(s);c.remove();toast("Version supprimée.");}catch(e){b.disabled=false;writeErr(e);}};
+}
 async function openVersions(){
   const p=P();if(!p)return;
   const m=modal(`<h3>Versions · ${esc(p.name||"Projet")}</h3>
@@ -3357,10 +3372,14 @@ async function openVersions(){
     const c=s.counts||{};sm.textContent=fmtWhen(s.at)+(who?" · "+who:"")+" · "+(c.scenes||0)+" scènes · "+(c.shots||0)+" plans · "+(c.elements||0)+" éléments";
     r.append(tl,sm);if(s.note){const pp=document.createElement("p");pp.textContent=s.note;r.append(pp);}
     d.append(b,r);
-    if(S.canWrite&&!cur){const go=document.createElement("button");go.className="btn small";go.type="button";go.textContent="Revenir à cette version";
+    if(S.canWrite&&!cur){const act=document.createElement("span");act.className="vact";
+      const go=document.createElement("button");go.className="btn small";go.type="button";go.textContent="Revenir à cette version";
       go.onclick=()=>{const c2=modal(`<h3>Revenir à la v${s.n||1} ?</h3><p>Le projet reprend son état du <b>${esc(fmtWhen(s.at))}</b> (${esc(snapTitle(s))}) : scénario, découpage, dépouillement et plan de travail, pour toute l'équipe. Il repasse en <b>v${s.n||1}</b>.</p><p class="empty">L'état actuel reste dans la liste des versions : tu pourras y retourner.</p><div class="mfoot"><button class="btn" id="rv-c">Annuler</button><button class="btn primary" id="rv-ok">Revenir à la v${s.n||1}</button></div>`);
         c2.querySelector("#rv-c").onclick=()=>c2.remove();c2.querySelector("#rv-ok").onclick=()=>{c2.remove();S.modalRefresh=null;m.remove();restoreSnapshot(s);};};
-      d.append(go);}
+      const del=document.createElement("button");del.className="btn small vdel";del.type="button";del.title="Supprimer cette version";del.setAttribute("aria-label","Supprimer la v"+(s.n||1)+" du "+fmtWhen(s.at));
+      del.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 12H7L6 9zm4 2v8h2v-8h-2zm4 0v8h2v-8h-2z"/></svg>`;
+      del.onclick=()=>confirmSnapDelete(s);
+      act.append(go,del);d.append(act);}
     return d;};
   const draw=async()=>{const box=m.querySelector("#vl");if(!box)return;
     const list=snapsSorted();
