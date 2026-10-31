@@ -318,7 +318,7 @@ tr.catrow td{background:var(--sunk);font-weight:600;font-size:12.5px}
 .poolzone{flex:1}
 .dropzone.over{background:var(--accent-soft)}
 .pad{padding:12px}
-.pstrip{display:grid;grid-template-columns:8px 40px minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:6px 8px 6px 0;border-top:1px solid var(--line);background:var(--surface);cursor:grab}
+.pstrip{display:grid;grid-template-columns:8px 24px 34px minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:6px 8px 6px 0;border-top:1px solid var(--line);background:var(--surface);cursor:grab}
 .pstrip[draggable=false]{cursor:default}
 .pstrip .band{align-self:stretch;margin-block:-6px}
 .pstrip .num{font-family:var(--f-display);font-weight:700;font-size:18px;text-align:right;font-variant-numeric:tabular-nums}
@@ -537,7 +537,15 @@ table.dct{min-width:1180px;width:100%;border-collapse:collapse;font-size:13.5px}
 .dct-seq .h{display:block;margin-top:6px;font-family:var(--f-script);font-weight:700;font-size:12.5px;text-transform:uppercase}
 .dct-seq small{display:block;margin-top:4px;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
 .dct-seq .btn{margin-top:8px}
-.dct-plan{width:70px}.dct-plan b{font-family:var(--f-display);font-size:20px;line-height:1}.dct-plan small{color:var(--muted);font-size:12px}
+.dct-plan{width:84px;position:relative}
+.dc-done{position:absolute;bottom:7px;right:6px;z-index:1;display:inline-flex;padding:2px;cursor:pointer}
+.dc-done input,.p-done input{width:17px;height:17px;margin:0;accent-color:var(--ok);cursor:pointer}
+.dc-done input:disabled,.p-done input:disabled{cursor:default}
+.dct tr.done td:not(.dct-seq){background:color-mix(in srgb,var(--ok) 13%,transparent)}
+.dct tr.done .dct-plan b{color:var(--ok)}
+.p-done{display:inline-flex;justify-content:center;cursor:pointer}
+.pstrip.done{background:color-mix(in srgb,var(--ok) 13%,var(--surface))}
+.pstrip.done .num{color:var(--ok)}.dct-plan b{font-family:var(--f-display);font-size:20px;line-height:1}.dct-plan small{color:var(--muted);font-size:12px}
 .dct-desc{width:27%}.dct-audio{width:23%}.dct-notes{width:16%}.dct-notes textarea{color:var(--muted)!important;font-size:13px!important}
 .dct-cam{width:175px}.dct-cam b{font-weight:600}.dct-cam span{color:var(--muted);font-size:12.5px}.dct-cam .dc-fx{margin-top:4px;color:var(--accent)}
 .dct-thumb{width:160px;padding:8px!important}.dct-thumb .dc-frame{width:140px}
@@ -812,7 +820,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage */
-const APP_VERSION="1.12.0";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.13.0";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -2212,8 +2220,9 @@ function castAlerts(){
 
 function planStrip(s){
   const lieu=lieuOf(s);const cast=[...castOf(s.id).values()];
-  return `<div class="pstrip" draggable="${S.canWrite?"true":"false"}" data-sid="${esc(s.id)}">
+  return `<div class="pstrip${s.filmed?" done":""}" draggable="${S.canWrite?"true":"false"}" data-sid="${esc(s.id)}">
     <span class="band" style="background:${bandColor(s)}"></span>
+    <label class="p-done" title="${s.filmed?"Scène tournée":"Marquer la scène comme tournée"}"><input type="checkbox" class="p-donecb" data-sid="${esc(s.id)}" ${s.filmed?"checked":""} ${S.canWrite?"":"disabled"} aria-label="Scène ${esc(s.num)} tournée"></label>
     <span class="num">${esc(s.num)}</span>
     <span class="pmain"><span class="hd" title="${esc(s.heading)}">${esc(s.location||s.heading)}</span>
       <span class="sub">${esc([s.intExt,s.time].filter(Boolean).join(" · "))}${lieu?` · <b>${esc(lieu.name)}</b>`:""}</span>
@@ -2234,6 +2243,7 @@ function renderPlan(){
         <div class="stat"><b>${days.length}</b><span>journée${days.length>1?"s":""}</span></div>
         <div class="stat"><b>${fmtE(planned)}<small> / ${fmtE(tot)}</small></b><span>pages planifiées</span></div>
         <div class="stat"><b>${pool.length}</b><span>scène${pool.length>1?"s":""} à placer</span></div>
+        <div class="stat"><b>${S.scenes.filter(s=>s.filmed).length}<small> / ${S.scenes.length}</small></b><span>scènes tournées</span></div>
         <div class="stat"><b>${S.locations.length}</b><span>lieu${S.locations.length>1?"x":""} de tournage</span></div>
       </div>
       <div class="actions">
@@ -2297,7 +2307,10 @@ function bindPlan(box){
   box.querySelectorAll(".d-del").forEach(b=>b.onclick=()=>deleteDay(b.dataset.did));
   box.querySelectorAll(".pmove").forEach(b=>b.onclick=ev=>{ev.stopPropagation();moveMenu([b.dataset.sid],b);});
   box.querySelectorAll(".grp-send").forEach(b=>b.onclick=()=>{const g=planGroups(S.scenes.filter(s=>!isPlanned(s))).find(x=>x.key===b.dataset.key);if(g)moveMenu(g.scenes.map(s=>s.id),b);});
-  box.querySelectorAll(".pstrip").forEach(st=>st.ondblclick=()=>selectScene(st.dataset.sid));
+  box.querySelectorAll(".pstrip").forEach(st=>st.ondblclick=e=>{if(e.target.closest(".p-done"))return;selectScene(st.dataset.sid);});
+  box.querySelectorAll(".p-donecb").forEach(c=>{c.onclick=e=>e.stopPropagation();c.onchange=()=>{const s=scene(c.dataset.sid);if(!s)return;const v=c.checked;
+    c.closest(".pstrip").classList.toggle("done",v);
+    trk(base()+"/scenes/"+s.id).update({filmed:v},{label:v?"Scène "+s.num+" tournée":"Scène "+s.num+" à tourner"}).catch(writeErr);};});
   if(!S.canWrite)return;
   box.querySelectorAll(".pstrip").forEach(st=>{
     st.ondragstart=e=>{S.dragging=st.dataset.sid;st.classList.add("dragging");try{e.dataTransfer.setData("text/plain",st.dataset.sid);e.dataTransfer.effectAllowed="move";}catch{}};
@@ -2545,9 +2558,9 @@ function shotRowHTML(x,i,seq){
   const id=esc(x.id);const w=S.canWrite;const n=esc(shotNum(x));const fx=x.effect&&x.effect!=="—";
   const cell=(cls,label,inner)=>w?`<button type="button" class="cellbtn ${cls}" aria-label="${label}">${inner}</button>`:`<div class="cellbtn">${inner}</div>`;
   const ta=(f,key,ph,label,cls)=>`<textarea id="dc-${key}-${id}" data-f="${f}" class="dc-grow${cls?" "+cls:""}" rows="2" placeholder="${w?ph:""}" aria-label="${label} du plan ${n}" ${w?"":"readonly"}>${esc(x[f]||"")}</textarea>`;
-  const opt=isOpt(x);const cls=[i===0?"first":"",opt?"opt":""].filter(Boolean).join(" ");
+  const opt=isOpt(x);const cls=[i===0?"first":"",opt?"opt":"",x.done?"done":""].filter(Boolean).join(" ");
   return `<tr data-id="${id}" id="dc-${id}"${cls?` class="${cls}"`:""}>${seq}
-    <td class="dct-plan">${cell("dc-plan","Plan "+n+(opt?" (optionnel)":"")+" : durée et actions",`<b>${n}</b>${opt?`<small class="opt-tag">Optionnel</small>`:`<small>${esc(String(x.dur??"").replace(".",","))} s</small>`}`)}</td>
+    <td class="dct-plan"><label class="dc-done" title="${x.done?"Plan fait":"Marquer le plan comme fait"}"><input type="checkbox" class="dc-donecb" ${x.done?"checked":""} ${w?"":"disabled"} aria-label="Plan ${n} fait"></label>${cell("dc-plan","Plan "+n+(opt?" (optionnel)":"")+" : durée et actions",`<b>${n}</b>${opt?`<small class="opt-tag">Optionnel</small>`:`<small>${esc(String(x.dur??"").replace(".",","))} s</small>`}`)}</td>
     <td class="ed dct-desc">${ta("action","a","Ce qu'on voit dans le cadre…","Description")}</td>
     <td class="ed dct-audio"><div class="dc-hl"><div class="dc-hl-bg" aria-hidden="true">${hlQuotes(x.sound)}</div>${ta("sound","s","Répliques, voix off, ambiance…","Audio","dc-hl-ta")}</div></td>
     <td class="dct-cam">${cell("dc-cam","Caméra du plan "+n+" : type de plan, mouvement, angle",`<b>${esc(SHOT_T[x.type]||x.type||"")}</b><span>${esc(x.move||"")}</span><span>${esc(x.angle||"")}</span>${fx?`<span class="dc-fx">${esc(x.effect)}</span>`:""}`)}</td>
@@ -2568,6 +2581,9 @@ function bindDec(box){
     el.oninput=()=>{dcGrow(el);if(el.classList.contains("dc-hl-ta"))el.previousElementSibling.innerHTML=hlQuotes(el.value);decLater(id,f,el.value);};el.onchange=()=>decNow(id,f,el.value);});
   box.querySelectorAll(".dc-cam").forEach(b=>b.onclick=()=>{const x=shotOf(b);if(x)openCamPop(x,b);});
   box.querySelectorAll(".dc-plan").forEach(b=>b.onclick=()=>{const x=shotOf(b);if(x)openPlanPop(x,b);});
+  box.querySelectorAll(".dc-donecb").forEach(c=>c.onchange=()=>{const x=shotOf(c);if(!x)return;const v=c.checked;
+    c.closest("tr").classList.toggle("done",v);
+    shotDoc(x.id).update({done:v},{label:v?"Plan "+shotNum(x)+" fait":"Plan "+shotNum(x)+" à refaire"}).catch(writeErr);});
 }
 /* menus contextuels des cellules */
 let dcPopEl=null;
