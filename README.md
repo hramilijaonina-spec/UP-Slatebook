@@ -17,6 +17,7 @@ Dépouillement de scénario et plan de travail collaboratifs pour l'équipe UP. 
 - Temps réel pour toute l'équipe ; connexion avec Google ou par lien e-mail (toute adresse, sans mot de passe).
 - Hors ligne : l'app s'ouvre sans réseau, les modifications sont gardées sur l'appareil et envoyées au retour de la connexion.
 - Version du projet : badge v1, v2… à côté du projet (clic = historique des versions) ; menu ••• → « Nouvelle version » avec une note, pour un épisode ou toute la série ; la version apparaît dans les noms et titres des fichiers exportés.
+- Sauvegarde automatique : chaque modification est enregistrée en direct ; une sauvegarde complète du projet (scénario, découpage, dépouillement, plan de travail) est créée 30 s après une série de changements (au plus toutes les 3 min). Clic sur le badge de version → liste des sauvegardes → « Revenir à cette version » (l'état actuel est gardé juste avant). Les 40 dernières sauvegardes automatiques sont conservées, les versions nommées ne sont jamais supprimées.
 - Sauvegarde : menu ••• du projet → « Sauvegarder le projet (fichier) » ; restauration dans un nouveau projet.
 
 ## Installation (une seule fois)
