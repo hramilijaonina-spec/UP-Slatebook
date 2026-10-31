@@ -16,6 +16,7 @@ Dépouillement de scénario et plan de travail collaboratifs pour l'équipe UP. 
 - Exports (menu ☰ → Exporter) : fiches de dépouillement, plan de travail (HTML imprimable, CSV), découpage technique (CSV). Les rapports d'éléments sont dans le Plan de travail → Rapports.
 - Temps réel pour toute l'équipe ; connexion avec Google ou par lien e-mail (toute adresse, sans mot de passe).
 - Hors ligne : l'app s'ouvre sans réseau, les modifications sont gardées sur l'appareil et envoyées au retour de la connexion.
+- Version du projet : badge v1, v2… à côté du projet (clic = historique des versions) ; menu ••• → « Nouvelle version » avec une note, pour un épisode ou toute la série ; la version apparaît dans les noms et titres des fichiers exportés.
 - Sauvegarde : menu ••• du projet → « Sauvegarder le projet (fichier) » ; restauration dans un nouveau projet.
 
 ## Installation (une seule fois)

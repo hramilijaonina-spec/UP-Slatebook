@@ -230,6 +230,14 @@ tr.catrow td{background:var(--sunk);font-weight:600;font-size:12.5px}
 .projbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--surface);border-bottom:1px solid var(--line)}
 .projbar .label{white-space:nowrap}
 .projbar select{max-width:min(340px,62vw);font-weight:600}
+.pver{border:1px solid color-mix(in srgb,var(--accent) 55%,var(--line));background:var(--accent-soft);color:var(--fg);border-radius:12px;padding:2px 10px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pver:hover{border-color:var(--accent)}
+.vlist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);max-height:280px;overflow:auto}
+.vlist div{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 10px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.vlist div:last-child{border-bottom:0}
+.vlist b{font-family:var(--f-display);font-size:18px;line-height:1.1}
+.vlist small{color:var(--muted);display:block}
+.vlist p{margin:2px 0 0;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
 .eps{display:flex;flex-wrap:wrap;gap:6px}
 .ep{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--sunk);border-radius:6px;padding:4px 10px 4px 7px;font-weight:600;font-size:13px;color:var(--muted)}
 .ep:hover{border-color:var(--accent);color:var(--fg)}
@@ -764,7 +772,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage */
-const APP_VERSION="1.8.0";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.8.1";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -934,10 +942,12 @@ function renderTop(){
     proj.innerHTML=`<span class="label">Projet en cours</span>
       <select id="projsel" aria-label="Projet en cours">${groups.map(x=>`<option value="${esc(x.key)}"${x.key===gk?" selected":""}>${esc(x.name||"Sans titre")}${x.items.length>1?" · "+x.items.length+" épisodes":""}</option>`).join("")}</select>
       ${g&&g.items.length>1?`<div class="eps" role="group" aria-label="Épisodes">${g.items.map(p=>`<button type="button" class="ep" data-pid="${esc(p.id)}" aria-pressed="${p.id===S.pid}" title="${esc(p.name||"")}"><i aria-hidden="true"></i>Ép. ${esc(p.episode||"?")}</button>`).join("")}</div>`:""}
+      ${cur?`<button type="button" class="pver" id="projver" title="Version du projet · historique">${esc(verTag(cur))}</button>`:""}
       ${S.canWrite&&cur?`<button class="btn ghost small" id="projmenu" aria-label="Options du projet">•••</button>`:""}`;
     $("#projsel").onchange=e=>{const x=groups.find(y=>y.key===e.target.value);if(!x)return;const last=store.get("upsb.ep."+x.key);const pick=x.items.find(p=>p.id===last)||x.items[0];if(pick)openProject(pick.id);};
     proj.querySelectorAll(".ep").forEach(b=>b.onclick=()=>{if(b.dataset.pid!==S.pid)openProject(b.dataset.pid);});
     const pm=$("#projmenu");if(pm)pm.onclick=e=>projectMenu(e.currentTarget);
+    const pv=$("#projver");if(pv)pv.onclick=openVersions;
   }else{proj.hidden=true;proj.innerHTML="";}
   const tabs=$("#tabs");tabs.hidden=!S.pid;
   const vis=S.tab==="reports"?"plan":S.tab;tabs.dataset.active=vis;
@@ -1202,6 +1212,7 @@ function elementMenu(e,anchor){
 function projectMenu(anchor){
   const p=P();if(!p)return;
   openPop(anchor.getBoundingClientRect(),p.name,[
+    {label:"Nouvelle version ("+verTag(p)+" → v"+(projVer(p)+1)+")…",run:()=>bumpVersion()},
     {label:"Renommer le projet",run:()=>renameProject()},
     {label:"Sauvegarder le projet (fichier)",run:backupProject},
     {label:"Restaurer une sauvegarde…",run:openRestore},
@@ -1623,7 +1634,7 @@ function backupProject(){
   const p=P();if(!p)return;
   const data={format:BACKUP_FORMAT,version:1,exportedAt:new Date().toISOString(),
     project:{...p},scenes:S.scenes,elements:S.elements,comments:S.comments,days:S.days,locations:S.locations,shots:S.shots};
-  save(slug(p.name)+"-sauvegarde-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(data));
+  save(fileBase(p)+"-sauvegarde-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(data));
 }
 function openRestore(){
   const m=modal(`<h3>Restaurer une sauvegarde</h3>
@@ -1660,20 +1671,20 @@ function exportCSV(){
   const rows=[["Scène","En-tête","INT/EXT","Jour/Nuit","Pages","Catégorie","Élément","Source","Statut scène"]];
   for(const s of S.scenes)for(const e of elsOf(s.id).sort((a,b)=>CATS.findIndex(c=>c.id===a.cat)-CATS.findIndex(c=>c.id===b.cat)))
     rows.push([s.num,s.heading,s.intExt,s.dayNight==="N"?"Nuit":s.dayNight==="J"?"Jour":"",fmtE(s.eighths),CAT[e.cat]?.label,e.name,e.src==="ai"?"IA":"Manuel",STATUS[s.status||"todo"]]);
-  save(slug(P()?.name)+"-elements.csv","﻿"+rows.map(r=>r.map(q).join(";")).join("\r\n"));
+  save(fileBase(P())+"-elements.csv","﻿"+rows.map(r=>r.map(q).join(";")).join("\r\n"));
 }
 function exportSheets(){
   const p=P();const sheets=S.scenes.map(s=>{const els=elsOf(s.id);
     const boxes=CATS.map(c=>{const it=els.filter(e=>e.cat===c.id);return`<div class="b" style="border-color:${c.color}"><h4 style="background:${c.color}">${c.label}</h4><ul>${it.map(e=>`<li>${esc(e.name)}</li>`).join("")}</ul></div>`;}).join("");
-    return`<section class="sheet"><header><div class="n">${esc(s.num)}</div><div><div class="t">${esc(s.heading)}</div><div class="m">${esc(s.intExt||"")} · ${s.dayNight==="N"?"Nuit":s.dayNight==="J"?"Jour":"—"} · ${fmtE(s.eighths)} p. · ${esc(STATUS[s.status||"todo"])}</div></div><div class="pr"><b>UP Slatebook</b><br>${esc(p?.name||"")}</div></header>
+    return`<section class="sheet"><header><div class="n">${esc(s.num)}</div><div><div class="t">${esc(s.heading)}</div><div class="m">${esc(s.intExt||"")} · ${s.dayNight==="N"?"Nuit":s.dayNight==="J"?"Jour":"—"} · ${fmtE(s.eighths)} p. · ${esc(STATUS[s.status||"todo"])}</div></div><div class="pr"><b>UP Slatebook</b><br>${esc(p?.name||"")} · ${esc(verTag(p))}</div></header>
     <p class="syn"><b>Synopsis :</b> ${esc(s.synopsis||"")}</p><div class="grid">${boxes}</div></section>`;}).join("");
-  const html=`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(p?.name)} — UP Slatebook</title><style>
+  const html=`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(p?.name)} ${esc(verTag(p))} — UP Slatebook</title><style>
   body{font-family:Helvetica,Arial,sans-serif;margin:0;color:#111}.sheet{page-break-after:always;padding:14mm;max-width:190mm;margin:auto}
   header{display:flex;gap:12px;align-items:center;border:2px solid #111;padding:8px}.n{font-size:34px;font-weight:700;min-width:50px;text-align:center}.t{font-weight:700;font-family:Courier,monospace;font-size:15px}.m{font-size:12px;color:#444}.pr{margin-left:auto;font-size:12px;text-align:right}
   .syn{font-size:13px;border:1px solid #999;border-top:0;padding:8px;margin:0 0 10px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .b{border:2px solid;min-height:70px}.b h4{margin:0;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:3px 6px}.b ul{margin:4px 0;padding-left:20px;font-size:12.5px}
   @media print{.sheet{padding:8mm}}</style></head><body>${sheets}</body></html>`;
-  save(slug(p?.name)+"-fiches-depouillement.html",html);
+  save(fileBase(p)+"-fiches-depouillement.html",html);
 }
 
 const MOD=/Mac|iPhone|iPad/.test(navigator.platform||"")?"⌘":"Ctrl+";
@@ -1976,14 +1987,14 @@ function scriptExportMenu(anchor){
 }
 async function flushEditor(){for(const sid of [...ED.dirty])await commitScene(sid);}
 async function exportFountain(){
-  await flushEditor();const p=P();const out=["Title: "+(p?.name||""),"",""];
+  await flushEditor();const p=P();const out=["Title: "+(p?.name||""),"Draft: "+verTag(p),"",""];
   for(const s of S.scenes){out.push((/^(INT|EXT|I\/E)/.test(s.heading)?"":".")+s.heading+" #"+s.num+"#","");
     for(const b of sceneBlocks(s)){const x=String(b.x||"").trim();if(!x)continue;
       if(b.t==="c")out.push("@"+x.toUpperCase());else if(b.t==="p")out.push(/^\(.*\)$/.test(x)?x:"("+x+")");
       else if(b.t==="d")out.push(x,"");else if(b.t==="t")out.push("> "+x.toUpperCase(),"");else if(b.t==="s")out.push("!"+x.toUpperCase(),"");else out.push("!"+x.replace(/\n/g,"\n"),"");
       if(b.t==="c"||b.t==="p")continue;}
     out.push("");}
-  save(slug(p?.name)+".fountain",out.join("\n").replace(/\n{3,}/g,"\n\n"));
+  save(fileBase(p)+".fountain",out.join("\n").replace(/\n{3,}/g,"\n\n"));
 }
 async function exportFDX(){
   await flushEditor();const p=P();const x=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -1993,7 +2004,7 @@ async function exportFDX(){
     for(const b of sceneBlocks(s)){const t=String(b.x||"").trim();if(!t)continue;
       const lines=t.split("\n");paras.push(`<Paragraph Type="${T[b.t]||"Action"}">${lines.map((l,i)=>`<Text>${x(l)}${i<lines.length-1?"\n":""}</Text>`).join("")}</Paragraph>`);}}
   const xml=`<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n<FinalDraft DocumentType="Script" Template="No" Version="5">\n<Content>\n${paras.join("\n")}\n</Content>\n<TitlePage><Content><Paragraph Alignment="Center" Type="Action"><Text>${x(p?.name||"")}</Text></Paragraph></Content></TitlePage>\n</FinalDraft>\n`;
-  save(slug(p?.name)+".fdx",xml);
+  save(fileBase(p)+".fdx",xml);
 }
 
 /* ---------- plan de travail ---------- */
@@ -2266,7 +2277,7 @@ function exportPlanCSV(){
   daysSorted().forEach((d,i)=>scenesOfDay(d.id).forEach((s,j)=>{const l=lieuOf(s);
     rows.push(["J"+(i+1),d.date||"",j+1,s.num,s.heading,s.location||"",l?.name||"",l?.address||"",s.intExt||"",s.dayNight==="N"?"Nuit":s.dayNight==="J"?"Jour":"",fmtE(s.eighths),[...castOf(s.id).values()].join(", ")]);}));
   S.scenes.filter(s=>!isPlanned(s)).forEach(s=>{const l=lieuOf(s);rows.push(["Non placée","","",s.num,s.heading,s.location||"",l?.name||"",l?.address||"",s.intExt||"",s.dayNight==="N"?"Nuit":s.dayNight==="J"?"Jour":"",fmtE(s.eighths),[...castOf(s.id).values()].join(", ")]);});
-  save(slug(P()?.name)+"-plan-de-travail.csv","﻿"+rows.map(r=>r.map(q).join(";")).join("\r\n"));
+  save(fileBase(P())+"-plan-de-travail.csv","﻿"+rows.map(r=>r.map(q).join(";")).join("\r\n"));
 }
 function exportPlanHTML(){
   const p=P();const BC={"INT-J":"#f4f4f1","EXT-J":"#f1c84b","INT-N":"#4c7bd0","EXT-N":"#3b9a5c"};
@@ -2278,8 +2289,8 @@ function exportPlanHTML(){
   const html=`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(p?.name)} — plan de travail — UP Slatebook</title><style>
   body{font-family:Helvetica,Arial,sans-serif;margin:12mm;color:#111}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 6px;border-bottom:2px solid #111;padding-bottom:3px}h2 small{font-weight:400;color:#555}
   table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top}th{background:#eee;font-size:10.5px;text-transform:uppercase}small{color:#555}section{page-break-inside:avoid}</style></head>
-  <body><h1>${esc(p?.name||"")} · Plan de travail</h1><div style="font-size:12px;color:#555">UP Slatebook · ${daysSorted().length} journées</div>${days}</body></html>`;
-  save(slug(p?.name)+"-plan-de-travail.html",html);
+  <body><h1>${esc(p?.name||"")} · ${esc(verTag(p))} · Plan de travail</h1><div style="font-size:12px;color:#555">UP Slatebook · ${daysSorted().length} journées</div>${days}</body></html>`;
+  save(fileBase(p)+"-plan-de-travail.html",html);
 }
 
 /* ---------- découpage technique ---------- */
@@ -2674,7 +2685,7 @@ function decRows(forExport){
     (x.type||"")+" – "+(SHOT_T[x.type]||"")+(x.img?" (photo)":""),x.notes||"",String(x.dur??"").replace(".",",")]);
   return out;
 }
-function exportDecCSV(){const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';save(slug(P()?.name)+"-decoupage.csv","﻿"+decRows(true).map(r=>r.map(q).join(";")).join("\r\n"));}
+function exportDecCSV(){const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';save(fileBase(P())+"-decoupage.csv","﻿"+decRows(true).map(r=>r.map(q).join(";")).join("\r\n"));}
 function copyDec(){
   const tsv=decRows().map(r=>r.map(c=>String(c??"").replace(/\t/g," ").replace(/\n/g," / ")).join("\t")).join("\n");
   const ok=()=>toast("Tableau copié : colle-le dans Sheets ou Excel.");
@@ -2939,7 +2950,7 @@ async function runDecExport(kind){
 }
 function exportTitle(groups){
   const n=groups.reduce((a,g)=>a+g.list.length,0),d=groups.reduce((a,g)=>a+sumDur(g.list),0);
-  return{name:P()?.name||"Découpage",meta:n+" plan"+(n>1?"s":"")+" · "+fmtDur(d)+" · "+new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})};
+  return{name:(P()?.name||"Découpage")+" · "+verTag(P()),meta:n+" plan"+(n>1?"s":"")+" · "+fmtDur(d)+" · "+new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})};
 }
 async function buildDecPDF(groups,imgs){
   const{jsPDF}=window.jspdf;const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
@@ -2963,7 +2974,7 @@ async function buildDecPDF(groups,imgs){
   });
   const n=doc.getNumberOfPages();
   for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(130,130,130);doc.text("UP Slatebook · page "+i+" / "+n,287,203,{align:"right"});}
-  await save(slug(T.name)+"-decoupage.pdf",doc.output("blob"));
+  await save(fileBase(P())+"-decoupage.pdf",doc.output("blob"));
 }
 async function buildDecPPTX(groups,imgs){
   const pptx=new window.PptxGenJS();pptx.layout="LAYOUT_WIDE";pptx.title="Découpage technique";
@@ -2991,7 +3002,7 @@ async function buildDecPPTX(groups,imgs){
     let yy=TOP+HEAD;for(const r of rows){const im=imgs.get(r.x.id);if(im)sl.addImage({data:im,x:xOf(5)+0.06,y:yy+0.06,w:W[5]-0.12,h:(W[5]-0.12)*9/16});yy+=r.h;}
   });
   const blob=await pptx.write({outputType:"blob"});
-  await save(slug(T.name)+"-decoupage.pptx",blob);
+  await save(fileBase(P())+"-decoupage.pptx",blob);
 }
 
 /* ---------- mettre à jour le scénario d'après le découpage (avec annulation) ---------- */
@@ -3169,6 +3180,47 @@ document.addEventListener("keydown",e=>{
   const tg=e.target;if(tg.closest&&tg.closest("input,textarea,select,[contenteditable]"))return;
   e.preventDefault();if(k==="y"||e.shiftKey)hRedo();else hUndo();
 });
+
+/* ---------- version du projet ---------- */
+const projVer=p=>Math.max(1,Math.floor(Number(p?.version)||1));
+const verTag=p=>"v"+projVer(p);
+const fileBase=p=>slug(p?.name)+"-"+verTag(p);
+function seriesOf(p){return p&&p.seriesId?S.projects.filter(x=>x.seriesId===p.seriesId):[p].filter(Boolean);}
+function bumpVersion(){
+  const p=P();if(!p)return;const n=projVer(p)+1;const sib=seriesOf(p);
+  const m=modal(`<h3>Passer à la version ${n} ?</h3>
+    <p class="empty">Le numéro de version apparaît à côté du nom du projet et dans les fichiers exportés (PDF, PowerPoint, CSV, fiches, plan de travail). Le contenu du projet ne change pas.</p>
+    <label class="row"><span class="label">Ce qui change dans cette version (facultatif)</span><textarea id="bv-note" style="min-height:70px;font-family:var(--f-ui);font-size:13.5px" placeholder="Ex. Découpage resserré à 2 min 30, nouvelles répliques de Soa"></textarea></label>
+    ${sib.length>1?`<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="bv-all"> Passer aussi les ${sib.length-1} autres épisodes de la série à leur version suivante</label>`:""}
+    <div class="mfoot"><button class="btn" id="bv-c">Annuler</button><button class="btn primary" id="bv-ok">Passer en v${n}</button></div>`);
+  const note=m.querySelector("#bv-note");note.focus();
+  m.querySelector("#bv-c").onclick=()=>m.remove();
+  m.querySelector("#bv-ok").onclick=async()=>{const b=m.querySelector("#bv-ok");b.disabled=true;
+    const all=m.querySelector("#bv-all")?.checked;const txt=note.value.trim().slice(0,1000);
+    const list=all?sib:[p];
+    try{await chunked(list,4,x=>{const v=projVer(x)+1;const hist=Array.isArray(x.versions)?x.versions.slice(-49):[];
+        return S.db.doc("projects/"+x.id).update({version:v,versions:[...hist,{n:v,at:Date.now(),by:S.me?.id||null,note:txt}]});});
+      m.remove();toast(list.length>1?list.length+" épisodes passés à leur version suivante.":"Projet passé en v"+n+".");}
+    catch(e){b.disabled=false;writeErr(e);}};
+}
+async function openVersions(){
+  const p=P();if(!p)return;
+  const hist=(Array.isArray(p.versions)?p.versions:[]).slice().sort((a,b)=>(b.n||0)-(a.n||0));
+  const m=modal(`<h3>${esc(p.name||"Projet")} · ${esc(verTag(p))}</h3>
+    ${hist.length?`<div class="vlist" id="vl"></div>`:`<p class="empty">Le projet est en v1 : aucune nouvelle version n'a encore été créée.</p>`}
+    <div class="mfoot">${S.canWrite?`<button class="btn" id="vv-new">Nouvelle version (v${projVer(p)+1})…</button>`:""}<button class="btn primary" id="vv-c">Fermer</button></div>`);
+  m.querySelector("#vv-c").onclick=()=>m.remove();
+  const nb=m.querySelector("#vv-new");if(nb)nb.onclick=()=>{m.remove();bumpVersion();};
+  const box=m.querySelector("#vl");if(!box)return;
+  const ids=[...new Set(hist.map(h=>h.by).filter(Boolean))];let ps={};
+  try{if(S.user&&ids.length)ps=await S.user.profiles(ids);}catch{}
+  for(const h of hist){const d=document.createElement("div");
+    const b=document.createElement("b");b.textContent="v"+h.n;
+    const r=document.createElement("span");const sm=document.createElement("small");
+    sm.textContent=new Date(h.at).toLocaleString("fr-FR",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})+(h.by?" · "+((ps[h.by]&&(ps[h.by].isMe?"toi":ps[h.by].name))||"quelqu'un"):"");
+    r.append(sm);if(h.note){const pp=document.createElement("p");pp.textContent=h.note;r.append(pp);}
+    d.append(b,r);box.append(d);}
+}
 
 /* ---------- tabs + keyboard ---------- */
 function goTab(t){if(S.tab===t)return;flushEditor().then(()=>{S.tab=t;$("#desk").innerHTML="";render();});}
