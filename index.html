@@ -178,6 +178,19 @@ mark.hl{background:color-mix(in srgb,var(--c) 24%,transparent);color:inherit;bor
 .el button{border:0;background:transparent;color:var(--muted);padding:0 3px;line-height:1;font-size:14px}
 .el button:hover{color:var(--danger)}
 .el.manual{border-style:dashed}
+.el-name{cursor:pointer;border-radius:2px}.el-name:hover{text-decoration:underline}
+.el-name:focus-visible{outline:2px solid var(--c);outline-offset:1px}
+.el.on{outline:2px solid var(--c);outline-offset:1px;background:color-mix(in srgb,var(--c) 26%,var(--surface))}
+.findwrap{position:sticky;top:8px;height:0;z-index:6}
+.findbar{position:absolute;right:8px;top:0;display:flex;align-items:center;gap:6px;max-width:calc(100% - 16px);padding:5px 6px 5px 8px;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;box-shadow:0 6px 18px rgb(0 0 0 / .35);font-size:13px}
+.findbar i{flex:0 0 auto;width:10px;height:10px;border-radius:2px;background:var(--c)}
+.findbar b{min-width:0;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.findbar .fcount{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums;margin-right:2px}
+.findbar button{flex:0 0 auto;width:28px;height:28px;padding:0;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--fg);font-size:15px;line-height:1}
+.findbar button:hover:not(:disabled){border-color:var(--c)}
+.findbar button:disabled{opacity:.4}
+mark.hl.found{background:color-mix(in srgb,var(--c) 42%,transparent)}
+mark.hl.found-cur{background:var(--c);color:#141414;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 35%,transparent)}
 .addrow{display:flex;gap:6px;flex-wrap:wrap}
 .addrow select{flex:0 0 auto;max-width:150px}
 .addrow input{flex:1;min-width:120px}
@@ -781,7 +794,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage */
-const APP_VERSION="1.9.2";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.10.0";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -1098,7 +1111,7 @@ function renderScene(){
   <div class="page sp" id="page"><div class="sb sb-h">${esc(s.heading)}</div>${(()=>{const els=elsOf(s.id);
     return sceneBlocks(s).filter(b=>String(b.x||"").trim()).map(b=>{const x=b.t==="p"&&!/^\(/.test(b.x.trim())?"("+b.x.trim()+")":b.x;
       return `<div class="sb sb-${b.t}">${highlightHTML(x,els)}</div>`;}).join("")||`<p class="empty">Scène vide.</p>`;})()}</div>
-  <p class="hint">${S.canWrite?"Sélectionne un mot ou une expression dans le texte pour l'ajouter au dépouillement. Clique sur un passage surligné pour le modifier.":"Les passages surlignés correspondent aux éléments du dépouillement."}</p>`;
+  <p class="hint">${S.canWrite?"Sélectionne un mot ou une expression dans le texte pour l'ajouter au dépouillement. Clique sur un passage surligné pour le modifier, ou sur un élément de la fiche pour retrouver ses passages.":"Les passages surlignés correspondent aux éléments du dépouillement."}</p>`;
   const syn=$("#synopsis");syn.value=synVal??(s.synopsis||"");if(synFocused){syn.focus();}
   syn.onchange=()=>updateScene(s.id,{synopsis:syn.value.trim()});
   const em=$("#e-minus"),ep=$("#e-plus");
@@ -1112,6 +1125,37 @@ function renderScene(){
   $("#b-prev").onclick=()=>i>0&&selectScene(S.scenes[i-1].id);
   $("#b-next").onclick=()=>i<S.scenes.length-1&&selectScene(S.scenes[i+1].id);
   $("#page").querySelectorAll("mark.hl").forEach(m=>m.onclick=ev=>{if(!S.canWrite)return;const e=S.elements.find(x=>x.id===m.dataset.eid);if(e)elementMenu(e,m);});
+  findApply(false);
+}
+/* ---------- retrouver les passages d'un élément dans la scène (comme « Rechercher » d'un éditeur) ---------- */
+const FIND={sid:null,eid:null,i:0};
+function findMarks(){const pg=$("#page");return pg&&FIND.eid?[...pg.querySelectorAll('mark.hl[data-eid="'+CSS.escape(FIND.eid)+'"]')]:[];}
+function findStart(eid){
+  if(FIND.eid===eid&&FIND.sid===S.sid){findGo(1);return;}
+  FIND.sid=S.sid;FIND.eid=eid;FIND.i=0;findApply(true);
+}
+function findGo(d){const ms=findMarks();if(!ms.length)return;FIND.i=(FIND.i+d+ms.length)%ms.length;findApply(true);}
+function findClose(){FIND.eid=null;FIND.sid=null;findApply(false);}
+function findChips(){document.querySelectorAll("#sheet .el-name").forEach(n=>n.parentElement.classList.toggle("on",!!FIND.eid&&FIND.sid===S.sid&&n.dataset.eid===FIND.eid));}
+function findApply(scroll){
+  const pane=$("#scriptpane");
+  pane&&pane.querySelectorAll("mark.hl.found,mark.hl.found-cur").forEach(m=>m.classList.remove("found","found-cur"));
+  let w=$("#findwrap");
+  const e=FIND.eid&&FIND.sid===S.sid&&S.tab==="scenes"?S.elements.find(x=>x.id===FIND.eid&&x.sceneId===S.sid):null;
+  if(!e||!pane){FIND.eid=null;FIND.sid=null;if(w)w.remove();findChips();return;}
+  const ms=findMarks();if(FIND.i>=ms.length)FIND.i=Math.max(0,ms.length-1);
+  ms.forEach((m,k)=>m.classList.add(k===FIND.i?"found-cur":"found"));
+  if(!w||w.parentElement!==pane){if(w)w.remove();w=document.createElement("div");w.id="findwrap";w.className="findwrap";const pg=$("#page");if(pg&&pg.parentElement===pane)pane.insertBefore(w,pg);else pane.prepend(w);}
+  const n=ms.length;
+  w.innerHTML=`<div class="findbar" role="search" aria-label="Passages de l'élément" style="--c:${CAT[e.cat]?.color||"#888"}">
+    <i aria-hidden="true"></i><b title="${esc(CAT[e.cat]?.label||"")}">${esc(e.name)}</b>
+    <span class="fcount" aria-live="polite">${n?(FIND.i+1)+" / "+n:"Pas trouvé dans le texte de la scène"}</span>
+    <button type="button" id="f-prev" aria-label="Passage précédent" title="Précédent (↑ ou Maj+Entrée)" ${n>1?"":"disabled"}>↑</button>
+    <button type="button" id="f-next" aria-label="Passage suivant" title="Suivant (↓ ou Entrée)" ${n>1?"":"disabled"}>↓</button>
+    <button type="button" id="f-x" aria-label="Fermer" title="Fermer (Échap)">×</button></div>`;
+  $("#f-prev").onclick=()=>findGo(-1);$("#f-next").onclick=()=>findGo(1);$("#f-x").onclick=findClose;
+  if(scroll&&ms[FIND.i])ms[FIND.i].scrollIntoView({block:"center",behavior:"smooth"});
+  findChips();
 }
 
 function renderSheet(){
@@ -1125,7 +1169,7 @@ function renderSheet(){
     <h2>Fiche de dépouillement</h2>
     ${groups.length?groups.map(({c,items})=>`<div class="cat" style="--c:${c.color}">
       <div class="cat-h"><i></i>${c.label}<small>${items.length}</small></div>
-      <div class="els">${items.map(e=>`<span class="el${e.src==="manual"?" manual":""}" style="--c:${c.color}" title="${e.src==="manual"?"Ajouté à la main":"Proposé par l'IA"}"><span>${esc(e.name)}</span>${S.canWrite?`<button data-eid="${esc(e.id)}" class="el-menu" aria-label="Modifier ${esc(e.name)}">⋯</button>`:""}</span>`).join("")}</div>
+      <div class="els">${items.map(e=>`<span class="el${e.src==="manual"?" manual":""}" style="--c:${c.color}" title="${e.src==="manual"?"Ajouté à la main":"Proposé par l'IA"}"><span class="el-name" data-eid="${esc(e.id)}" role="button" tabindex="0" title="Voir ses passages dans le texte">${esc(e.name)}</span>${S.canWrite?`<button data-eid="${esc(e.id)}" class="el-menu" aria-label="Modifier ${esc(e.name)}">⋯</button>`:""}</span>`).join("")}</div>
     </div>`).join(""):`<p class="empty">${(s.status||"todo")==="todo"?"Scène pas encore analysée. Lance l'IA ou ajoute les éléments à la main.":"Aucun élément pour cette scène."}</p>`}
     ${S.canWrite?`<form class="addrow" id="addform">
       <select id="add-cat" aria-label="Catégorie">${CATS.map(c=>`<option value="${c.id}"${c.id===addCat?" selected":""}>${c.label}</option>`).join("")}</select>
@@ -1138,6 +1182,9 @@ function renderSheet(){
     ${S.canComment?`<form class="composer" id="cmform"><textarea id="cm-text" rows="2" placeholder="Une remarque pour l'équipe sur cette scène"></textarea><div><button class="btn" type="submit">Envoyer</button></div></form>`:""}
   </div>`;
   sh.querySelectorAll(".el-menu").forEach(b=>b.onclick=()=>{const e=S.elements.find(x=>x.id===b.dataset.eid);if(e)elementMenu(e,b);});
+  sh.querySelectorAll(".el-name").forEach(n=>{n.onclick=()=>findStart(n.dataset.eid);
+    n.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();findStart(n.dataset.eid);}};});
+  findChips();
   const af=$("#addform");
   if(af){const an=$("#add-name");an.value=addVal;if(addFocus)an.focus();
     af.onsubmit=ev=>{ev.preventDefault();const n=an.value.trim();if(!n)return;addElement(s.id,$("#add-cat").value,n,"manual");an.value="";an.focus();};}
@@ -3406,6 +3453,12 @@ window.addEventListener("beforeunload",()=>{if(ED.dirty.size)flushEditor();});
 document.addEventListener("keydown",e=>{
   if(S.tab!=="scenes"||!S.pid||popEl||document.querySelector(".scrim"))return;
   const t=e.target;if(t.closest&&t.closest("input,textarea,select,[contenteditable]"))return;
+  if(FIND.eid&&FIND.sid===S.sid){
+    if(e.key==="Escape"){e.preventDefault();findClose();return;}
+    if(e.key==="Enter"&&t.closest&&t.closest("button,[role=button]"))return;
+    if(e.key==="ArrowDown"||(e.key==="Enter"&&!e.shiftKey)){e.preventDefault();findGo(1);return;}
+    if(e.key==="ArrowUp"||(e.key==="Enter"&&e.shiftKey)){e.preventDefault();findGo(-1);return;}
+  }
   const i=S.scenes.findIndex(s=>s.id===S.sid);
   if((e.key==="ArrowDown"||e.key==="j")&&i<S.scenes.length-1){e.preventDefault();selectScene(S.scenes[i+1].id);}
   if((e.key==="ArrowUp"||e.key==="k")&&i>0){e.preventDefault();selectScene(S.scenes[i-1].id);}
