@@ -235,6 +235,8 @@ tr.catrow td{background:var(--sunk);font-weight:600;font-size:12.5px}
 .vlist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);max-height:280px;overflow:auto}
 .vlist div{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:4px 10px;padding:8px 10px;border-bottom:1px solid var(--line)}
 .vlist div.named{background:var(--accent-soft)}
+.vlist div.cur{box-shadow:inset 3px 0 0 var(--ok)}
+.vlist em.vcur{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:10px;background:color-mix(in srgb,var(--ok) 22%,transparent);color:var(--ok);font-style:normal;font-size:11.5px;font-weight:700;vertical-align:2px}
 .vlist strong{display:block;font-size:13.5px}
 .savest{font-size:12px;color:var(--muted);white-space:nowrap}
 @media (max-width:560px){.vlist div{grid-template-columns:40px minmax(0,1fr)}.vlist div .btn{grid-column:2;justify-self:start}}
@@ -776,7 +778,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage */
-const APP_VERSION="1.9.0";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.9.1";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -919,7 +921,7 @@ function openProject(pid){
   S.unsubP.push(S.db.collection(b+"/locations").onSnapshot(snap=>{S.locations=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr));
   S.unsubP.push(S.db.collection(b+"/shots").onSnapshot(snap=>{S.shots=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr));
   S.unsubP.push(S.db.collection(b+"/backups").onSnapshot(snap=>{S.backups=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr));
-  S.unsubP.push(S.db.collection(b+"/snapshots").onSnapshot(snap=>{S.snaps=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr));
+  S.unsubP.push(S.db.collection(b+"/snapshots").onSnapshot(snap=>{S.snaps=snap.docs.map(d=>({id:d.id,...d.data()}));snapMigrate();render();},onErr));
   sendPresence();render();
 }
 function selectScene(sid){S.sid=sid;store.set("upsb.sid."+S.pid,sid);sendPresence();S.tab="scenes";render();
@@ -1217,7 +1219,7 @@ function elementMenu(e,anchor){
 function projectMenu(anchor){
   const p=P();if(!p)return;
   openPop(anchor.getBoundingClientRect(),p.name,[
-    {label:"Nouvelle version ("+verTag(p)+" → v"+(projVer(p)+1)+")…",run:()=>bumpVersion()},
+    {label:"Nouvelle version ("+verTag(p)+" → v"+nextVer(p)+")…",run:()=>bumpVersion()},
     {label:"Renommer le projet",run:()=>renameProject()},
     {label:"Sauvegarder le projet (fichier)",run:backupProject},
     {label:"Restaurer une sauvegarde…",run:openRestore},
@@ -3189,11 +3191,12 @@ document.addEventListener("keydown",e=>{
 /* ---------- version du projet ---------- */
 const projVer=p=>Math.max(1,Math.floor(Number(p?.version)||1));
 const verTag=p=>"v"+projVer(p);
+const nextVer=p=>1+Math.max(projVer(p),...(Array.isArray(p?.versions)?p.versions:Object.values(p?.versions||{})).map(v=>Number(v?.n)||0),...(p?.id===S.pid?S.snaps.map(s=>Number(s.n)||0):[0]));
 function savedAgo(t){const d=(Date.now()-t)/1000;return d<60?"à l'instant":d<3600?"il y a "+Math.floor(d/60)+" min":fmtWhen(t);}
 const fileBase=p=>slug(p?.name)+"-"+verTag(p);
 function seriesOf(p){return p&&p.seriesId?S.projects.filter(x=>x.seriesId===p.seriesId):[p].filter(Boolean);}
 function bumpVersion(){
-  const p=P();if(!p)return;const n=projVer(p)+1;const sib=seriesOf(p);
+  const p=P();if(!p)return;const n=nextVer(p);const sib=seriesOf(p);
   const m=modal(`<h3>Passer à la version ${n} ?</h3>
     <p class="empty">L'état actuel du projet est enregistré comme version ${n} : tu pourras y revenir à tout moment depuis le badge de version. Le numéro apparaît aussi dans les fichiers exportés.</p>
     <label class="row"><span class="label">Ce qui change dans cette version (facultatif)</span><textarea id="bv-note" style="min-height:70px;font-family:var(--f-ui);font-size:13.5px" placeholder="Ex. Découpage resserré à 2 min 30, nouvelles répliques de Soa"></textarea></label>
@@ -3204,16 +3207,23 @@ function bumpVersion(){
   m.querySelector("#bv-ok").onclick=async()=>{const b=m.querySelector("#bv-ok");b.disabled=true;
     const all=m.querySelector("#bv-all")?.checked;const txt=note.value.trim().slice(0,1000);
     const list=all?sib:[p];
-    try{await chunked(list,4,x=>{const v=projVer(x)+1;const hist=Array.isArray(x.versions)?x.versions.slice(-49):[];
+    try{await chunked(list,4,x=>{const v=nextVer(x);const hist=Array.isArray(x.versions)?x.versions.slice(-49):[];
         return S.db.doc("projects/"+x.id).update({version:v,versions:[...hist,{n:v,at:Date.now(),by:S.me?.id||null,note:txt}]});});
       m.remove();try{await takeSnapshot({force:true,named:true,n,note:txt,label:"v"+n});}catch{}
       toast(list.length>1?list.length+" épisodes passés à leur version suivante.":"Projet passé en v"+n+" · version enregistrée.");}
     catch(e){b.disabled=false;writeErr(e);}};
 }
 /* ---------- sauvegarde automatique et retour à une version ---------- */
-const SNAP={timer:null,first:0,busy:false,nextLabel:"",lastHash:null,lastAt:0,KEEP:40,PART:180000};
+const SNAP={timer:null,first:0,busy:false,lastHash:null,lastAt:0,KEEP:40,PART:180000,mig:null,migBad:new Set()};
 const SNAP_COLS=["scenes","elements","shots","days","locations"];
 function snapHash(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193);}return(h>>>0).toString(36)+"-"+s.length.toString(36);}
+/* forme canonique : clés triées, valeurs vides retirées (la base ne garde ni null ni listes vides) */
+function snapNorm(v){
+  if(Array.isArray(v)){const a=v.map(snapNorm).filter(x=>x!==undefined);return a.length?a:undefined;}
+  if(v&&typeof v==="object"){const o={};for(const k of Object.keys(v).sort()){const x=snapNorm(v[k]);if(x!==undefined)o[k]=x;}return Object.keys(o).length?o:undefined;}
+  return v===null||v===undefined?undefined:v;
+}
+const snapHashOf=d=>snapHash(JSON.stringify(snapNorm(d))||"");
 function snapData(){
   const strip=({id,updatedAt,updatedBy,...r})=>r;
   const sortById=a=>[...a].sort((x,y)=>String(x.id).localeCompare(String(y.id)));
@@ -3226,7 +3236,20 @@ function snapData(){
   const p=P()||{};d.project={targetSec:p.targetSec||0,pagesPerDay:p.pagesPerDay||null};
   return d;
 }
+const curHash=()=>snapHashOf(snapData());
 const snapsSorted=()=>[...S.snaps].sort((a,b)=>(b.at||0)-(a.at||0));
+/* la sauvegarde qui correspond exactement à l'état actuel du projet (la plus récente) */
+const snapCurrent=h=>{const m=snapsSorted().filter(s=>s.hv===2&&s.hash===h);const v=projVer(P());return m.find(s=>(s.n||1)===v)||m[0]||null;};
+/* nouvelle empreinte pour les sauvegardes faites avant la v1.9.1 */
+function snapMigrate(){
+  if(SNAP.mig)return SNAP.mig;
+  const todo=S.snaps.filter(s=>s.hv!==2&&!SNAP.migBad.has(s.id));if(!todo.length||!S.canWrite)return Promise.resolve();
+  const pid=S.pid;
+  SNAP.mig=(async()=>{for(const s of todo){if(S.pid!==pid)break;
+      try{const d=await loadSnap(s);await S.db.doc(base()+"/snapshots/"+s.id).update({hash:snapHashOf(d),hv:2});}catch{SNAP.migBad.add(s.id);}}})()
+    .finally(()=>{SNAP.mig=null;});
+  return SNAP.mig;
+}
 function snapSchedule(){
   if(!S.pid||!S.canWrite||H.applying||SNAP.busy||S.restoring)return;
   if(!S.scenes.length)return;
@@ -3235,24 +3258,25 @@ function snapSchedule(){
   const wait=Math.max(1500,Math.min(30000,SNAP.first+180000-now));
   SNAP.timer=setTimeout(()=>{SNAP.timer=null;takeSnapshot({});},wait);
 }
+/* o.force : enregistrer même si cet état existe déjà ; o.strict : remonter les erreurs */
 async function takeSnapshot(o){
   if(!S.pid||!S.canWrite)return null;
-  if(SNAP.busy){if(!o.force)return null;while(SNAP.busy)await new Promise(r=>setTimeout(r,200));}
-  const data=snapData();const json=JSON.stringify(data);const hash=snapHash(json);
-  const last=snapsSorted()[0];
-  if(!o.force&&last&&last.hash===hash){SNAP.lastHash=hash;return null;}
+  if(SNAP.busy){if(!o.force&&!o.strict)return null;while(SNAP.busy)await new Promise(r=>setTimeout(r,200));}
+  if(!o.force)await snapMigrate();
+  const data=snapData();const json=JSON.stringify(data);const hash=snapHashOf(data);
+  if(!o.force&&S.snaps.some(s=>s.hv===2&&s.hash===hash)){SNAP.lastHash=hash;return null;}
   SNAP.busy=true;
   try{
     const pid=S.pid,bs=base();const id=Date.now().toString(36)+uid().slice(0,4);
     const parts=[];for(let i=0;i<json.length;i+=SNAP.PART)parts.push(json.slice(i,i+SNAP.PART));
     for(let i=0;i<parts.length;i++)await S.db.doc(bs+"/snapparts/"+id+"_"+i).set({s:parts[i]});
     if(S.pid!==pid)return null;
-    const meta={at:Date.now(),by:S.me?.id||null,hash,parts:parts.length,size:json.length,named:!!o.named,label:o.label||SNAP.nextLabel||"",note:o.note||"",n:o.n||projVer(P()),
+    const meta={at:Date.now(),by:S.me?.id||null,hash,hv:2,parts:parts.length,size:json.length,named:!!o.named,label:o.label||"",note:o.note||"",n:o.n||projVer(P()),
       counts:{scenes:data.scenes.length,shots:data.shots.filter(x=>!isOpt(x)).length,elements:data.elements.length,days:data.days.length}};
     await S.db.doc(bs+"/snapshots/"+id).set(meta);
-    SNAP.lastHash=hash;SNAP.lastAt=meta.at;if(!o.label)SNAP.nextLabel="";
+    SNAP.lastHash=hash;SNAP.lastAt=meta.at;
     snapPrune(id);return id;
-  }catch(e){if(o.force)throw e;return null;}
+  }catch(e){if(o.force||o.strict)throw e;return null;}
   finally{SNAP.busy=false;render();}
 }
 async function snapPrune(keepId){
@@ -3265,20 +3289,25 @@ async function loadSnap(meta){
   for(let i=0;i<(meta.parts||1);i++){const r=await S.db.doc(base()+"/snapparts/"+meta.id+"_"+i).get();if(!r.exists)throw{code:"snapshot_incomplet"};json+=r.data().s||"";}
   return JSON.parse(json);
 }
-function snapLabel(s){return s.named?"v"+s.n+(s.label&&s.label!=="v"+s.n?" · "+s.label:""):(s.label||"Sauvegarde automatique");}
+function snapTitle(s){return s.named?(s.label&&s.label!=="v"+s.n?s.label:"Nouvelle version"):(s.label||"Sauvegarde automatique");}
+function snapLabel(s){return"v"+(s.n||1)+" du "+fmtWhen(s.at);}
 const fmtWhen=t=>new Date(t).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
 function saveStatus(){
   if(!S.pid)return"";
+  if(S.restoring)return"Retour en cours…";
   if(SNAP.busy)return"Enregistrement…";
-  const last=snapsSorted()[0];return last?"Enregistré "+savedAgo(last.at):"";
+  const last=snapsSorted()[0];return last?"Enregistré "+timeAgo(Math.max(last.at,SNAP.lastAt||0)):"";
 }
 async function restoreSnapshot(meta){
   if(S.busy||SNAP.busy){toast("Patiente : une opération est en cours.");return;}
+  clearTimeout(SNAP.timer);SNAP.timer=null;
   S.restoring=true;S.busy={done:0,total:1,ctl:new AbortController(),label:"Retour à la version"};render();
+  let ok=false;
   try{
     await hFlush();
     const data=await loadSnap(meta);
-    await takeSnapshot({force:true,label:"Avant le retour à « "+snapLabel(meta)+" »"});
+    /* l'état actuel est gardé, sauf s'il est déjà dans la liste */
+    await takeSnapshot({strict:true,label:"État avant le retour à la v"+(meta.n||1)});
     const arrs={scenes:S.scenes,elements:S.elements,shots:S.shots,days:S.days,locations:S.locations};
     const ops=[];
     for(const col of SNAP_COLS){
@@ -3287,53 +3316,64 @@ async function restoreSnapshot(meta){
       for(const[id,w]of want){let{id:_,...doc}=w;const c=cur.get(id);
         if(col==="scenes"&&!("body" in doc))doc.body=bodyFromBlocks(doc.blocks||[]);
         if(col==="shots"&&typeof doc.img==="string"&&doc.img.startsWith("@keep:"))doc.img=c&&c.img&&snapHash(String(c.img))===doc.img.slice(6)?c.img:(c?.img||null);
-        if(c){const{id:__,updatedAt,updatedBy,...cc}=c;const{updatedAt:a2,updatedBy:b2,...dd}=doc;if(JSON.stringify(cc)===JSON.stringify(dd))continue;}
+        if(c){const{id:__,updatedAt,updatedBy,...cc}=c;const{updatedAt:a2,updatedBy:b2,...dd}=doc;if(JSON.stringify(snapNorm(cc))===JSON.stringify(snapNorm(dd)))continue;}
         ops.push({path:base()+"/"+col+"/"+id,val:doc});}
     }
     S.busy.total=ops.length+1;render();
     await chunked(ops,6,async o=>{if(o.val===null)await S.db.doc(o.path).delete();else await S.db.doc(o.path).set(o.val);S.busy.done++;});
-    if(data.project)await S.db.doc("projects/"+S.pid).update({targetSec:data.project.targetSec||0,...(data.project.pagesPerDay?{pagesPerDay:data.project.pagesPerDay}:{})});
+    const pu={version:meta.n||1};if(data.project){pu.targetSec=data.project.targetSec||0;if(data.project.pagesPerDay)pu.pagesPerDay=data.project.pagesPerDay;}
+    await S.db.doc("projects/"+S.pid).update(pu);
     H.undo=[];H.redo=[];H.shadow.clear();ED.sigs.clear();
-    toast("Projet revenu à « "+snapLabel(meta)+" » ("+fmtWhen(meta.at)+"). L'état d'avant est gardé dans l'historique.",6000);
-  }catch(e){toast("Le retour à cette version a échoué ("+(e?.code||"erreur")+"). Rien n'a été perdu : l'état d'avant est dans l'historique.",6000);}
-  finally{S.busy=null;S.restoring=false;SNAP.lastHash=null;
-    SNAP.nextLabel="Retour à « "+snapLabel(meta)+" »";clearTimeout(SNAP.timer);SNAP.timer=setTimeout(()=>{SNAP.timer=null;takeSnapshot({force:true});},2500);render();}
+    /* la version choisie redevient la version actuelle : aucune nouvelle sauvegarde n'est créée */
+    await new Promise(r=>setTimeout(r,900));
+    const h=curHash();
+    if(!S.snaps.some(s=>s.hv===2&&s.hash===h))await S.db.doc(base()+"/snapshots/"+meta.id).update({hash:h,hv:2});
+    SNAP.lastHash=h;ok=true;
+    toast("Projet revenu à la "+snapLabel(meta)+". L'état d'avant reste dans la liste des versions.",6000);
+  }catch(e){toast("Le retour à cette version a échoué ("+(e?.code||"erreur")+"). Rien n'a été perdu : l'état d'avant est dans la liste des versions.",6000);}
+  finally{S.busy=null;S.restoring=false;if(!ok)SNAP.lastHash=null;render();}
 }
 async function openVersions(){
   const p=P();if(!p)return;
   const m=modal(`<h3>Versions · ${esc(p.name||"Projet")}</h3>
-    <p class="empty">Chaque modification est enregistrée automatiquement : une sauvegarde est créée après chaque série de changements. Choisis une version pour y revenir ; l'état actuel est gardé avant, tu peux donc toujours revenir en arrière.</p>
+    <p class="empty">Chaque modification est enregistrée automatiquement. Choisis une version pour que le projet revienne à cet état ; l'état actuel reste dans la liste, tu peux donc toujours y retourner.</p>
     <div class="vlist" id="vl"></div>
-    <div class="mfoot">${S.canWrite?`<button class="btn" id="vv-now">Enregistrer maintenant</button><button class="btn" id="vv-new" style="margin-right:auto">Nouvelle version (v${projVer(p)+1})…</button>`:""}<button class="btn primary" id="vv-c">Fermer</button></div>`);
-  m.querySelector(".modal").style.maxWidth="640px";
+    <div class="mfoot">${S.canWrite?`<button class="btn" id="vv-now">Enregistrer maintenant</button><button class="btn" id="vv-new" style="margin-right:auto">Nouvelle version (v${nextVer(p)})…</button>`:""}<button class="btn primary" id="vv-c">Fermer</button></div>`);
+  m.querySelector(".modal").style.maxWidth="660px";
   m.querySelector("#vv-c").onclick=()=>{S.modalRefresh=null;m.remove();};
   const nb=m.querySelector("#vv-new");if(nb)nb.onclick=()=>{S.modalRefresh=null;m.remove();bumpVersion();};
   const now=m.querySelector("#vv-now");if(now)now.onclick=async()=>{now.disabled=true;now.textContent="Enregistrement…";
-    try{const id=await takeSnapshot({force:true,label:"Enregistrement manuel"});toast(id?"Version enregistrée.":"Rien à enregistrer.");}catch(e){writeErr(e);}
+    try{const id=await takeSnapshot({strict:true,label:"Enregistrement manuel"});toast(id?"Version enregistrée.":"Cet état est déjà enregistré : c'est la version actuelle.");}catch(e){writeErr(e);}
     now.disabled=false;now.textContent="Enregistrer maintenant";};
   const obs=new MutationObserver(()=>{if(!document.body.contains(m)){S.modalRefresh=null;obs.disconnect();}});obs.observe(document.body,{childList:true});
+  snapMigrate();
   let ps={};
+  const row=(s,cur)=>{const d=document.createElement("div");d.className=(s.named?"named":"")+(cur?" cur":"");
+    const b=document.createElement("b");b.textContent="v"+(s.n||1);
+    const r=document.createElement("span");
+    const tl=document.createElement("strong");tl.textContent=snapTitle(s);
+    if(cur){const pill=document.createElement("em");pill.className="vcur";pill.textContent="Version actuelle";tl.append(pill);}
+    const sm=document.createElement("small");const who=s.by?((ps[s.by]&&(ps[s.by].isMe?"toi":ps[s.by].name))||"quelqu'un"):"";
+    const c=s.counts||{};sm.textContent=fmtWhen(s.at)+(who?" · "+who:"")+" · "+(c.scenes||0)+" scènes · "+(c.shots||0)+" plans · "+(c.elements||0)+" éléments";
+    r.append(tl,sm);if(s.note){const pp=document.createElement("p");pp.textContent=s.note;r.append(pp);}
+    d.append(b,r);
+    if(S.canWrite&&!cur){const go=document.createElement("button");go.className="btn small";go.type="button";go.textContent="Revenir à cette version";
+      go.onclick=()=>{const c2=modal(`<h3>Revenir à la v${s.n||1} ?</h3><p>Le projet reprend son état du <b>${esc(fmtWhen(s.at))}</b> (${esc(snapTitle(s))}) : scénario, découpage, dépouillement et plan de travail, pour toute l'équipe. Il repasse en <b>v${s.n||1}</b>.</p><p class="empty">L'état actuel reste dans la liste des versions : tu pourras y retourner.</p><div class="mfoot"><button class="btn" id="rv-c">Annuler</button><button class="btn primary" id="rv-ok">Revenir à la v${s.n||1}</button></div>`);
+        c2.querySelector("#rv-c").onclick=()=>c2.remove();c2.querySelector("#rv-ok").onclick=()=>{c2.remove();S.modalRefresh=null;m.remove();restoreSnapshot(s);};};
+      d.append(go);}
+    return d;};
   const draw=async()=>{const box=m.querySelector("#vl");if(!box)return;
     const list=snapsSorted();
     const ids=[...new Set(list.map(h=>h.by).filter(Boolean))].filter(i=>!(i in ps));
     if(S.user&&ids.length){try{Object.assign(ps,await S.user.profiles(ids));}catch{}}
     box.innerHTML="";
     if(!list.length){box.innerHTML=`<p class="empty" style="padding:10px">Aucune sauvegarde pour l'instant : la première est créée quelques secondes après la prochaine modification.</p>`;return;}
-    list.forEach((s,i)=>{const d=document.createElement("div");d.className="vrow"+(s.named?" named":"");
-      const b=document.createElement("b");b.textContent=s.named?"v"+s.n:"v"+(s.n||1);
-      const r=document.createElement("span");
-      const tl=document.createElement("strong");tl.textContent=(s.named?(s.label&&s.label!=="v"+s.n?s.label:"Nouvelle version"):(s.label||"Sauvegarde automatique"));
-      const sm=document.createElement("small");const who=s.by?((ps[s.by]&&(ps[s.by].isMe?"toi":ps[s.by].name))||"quelqu'un"):"";
-      const c=s.counts||{};sm.textContent=fmtWhen(s.at)+(who?" · "+who:"")+" · "+(c.scenes||0)+" scènes · "+(c.shots||0)+" plans · "+(c.elements||0)+" éléments";
-      r.append(tl,sm);if(s.note){const pp=document.createElement("p");pp.textContent=s.note;r.append(pp);}
-      d.append(b,r);
-      if(S.canWrite&&i>0){const go=document.createElement("button");go.className="btn small";go.type="button";go.textContent="Revenir à cette version";
-        go.onclick=()=>{const c2=modal(`<h3>Revenir à cette version ?</h3><p>Le projet reprend son état du <b>${esc(fmtWhen(s.at))}</b> (${esc(snapLabel(s))}) : scénario, découpage, dépouillement et plan de travail, pour toute l'équipe.</p><p class="empty">L'état actuel est enregistré juste avant dans l'historique : tu pourras y revenir.</p><div class="mfoot"><button class="btn" id="rv-c">Annuler</button><button class="btn primary" id="rv-ok">Revenir à cette version</button></div>`);
-          c2.querySelector("#rv-c").onclick=()=>c2.remove();c2.querySelector("#rv-ok").onclick=()=>{c2.remove();S.modalRefresh=null;m.remove();restoreSnapshot(s);};};
-        d.append(go);}
-      box.append(d);});
+    const cur=snapCurrent(curHash());
+    if(!cur){const d=document.createElement("div");d.className="cur";
+      d.innerHTML=`<b>${esc(verTag(P()))}</b><span><strong>Modifications en cours<em class="vcur">Version actuelle</em></strong><small>${SNAP.busy||SNAP.mig?"Enregistrement…":"Enregistrées automatiquement dans quelques secondes"}</small></span>`;box.append(d);}
+    list.forEach(s=>box.append(row(s,s===cur)));
   };
-  let sig="";S.modalRefresh=()=>{const k=S.snaps.map(s=>s.id).join();if(k!==sig){sig=k;draw();}};S.modalRefresh();
+  let sig="";S.modalRefresh=()=>{const k=S.snaps.map(s=>s.id+":"+s.hash).join()+"|"+(SNAP.busy?1:0);if(k!==sig){sig=k;draw();}};S.modalRefresh();
 }
 
 /* ---------- tabs + keyboard ---------- */
