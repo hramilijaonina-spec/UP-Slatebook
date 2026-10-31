@@ -347,24 +347,8 @@ R('/* menu principal */', '''/* en-tête : recherche, mode local, bandeau */
   .projbar .ep{padding:4px 9px;font-size:12.5px;white-space:nowrap;flex:0 0 auto}.projbar .ep i{display:none}.projbar .pver{flex:0 0 auto}
   body.hdr-hide .top,body.hdr-hide .projbar{display:none}
   .banner{padding-block:4px;font-size:12px}
-  /* découpage : une carte par plan */
-  .dc .dct-wrap{border:0;background:transparent;overflow:visible;margin-top:10px}
-  table.dct,.dct tbody{display:block!important;width:100%!important;min-width:0!important}
-  .dct thead{display:none}
-  .dct tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"seq seq" "thumb thumb" "plan cam" "desc desc" "audio audio" "notes notes";border:1px solid var(--line);border-radius:10px;margin:0 0 10px;overflow:hidden;background:var(--surface)}
-  .dct tr.dct-add{display:block;border:0;background:transparent;margin:-2px 0 18px}
-  .dct tr.dct-add td{border:0;padding:0}
-  .dct td{display:block;width:auto!important;border:0!important}
-  .dct tr.first td{border-top:0!important}
-  .dct-seq{grid-area:seq;display:flex!important;flex-wrap:wrap;align-items:baseline;gap:4px 10px;border-right:0!important;border-bottom:1px solid var(--line)!important}
-  .dct-seq b{font-size:22px}.dct-seq .h{margin-top:0;font-size:12px}.dct-seq small{margin-top:0;flex-basis:100%}.dct-seq .prog{margin-top:0}
-  .dct-plan{grid-area:plan;border-right:1px solid var(--line)!important}
-  .dct-cam{grid-area:cam}
-  .dct-thumb{grid-area:thumb;padding:0!important}.dct-thumb .dc-frame{width:100%!important;max-width:none!important;border-radius:0}
-  .dct-desc{grid-area:desc}.dct-audio{grid-area:audio}.dct-notes{grid-area:notes}
-  .dct-desc,.dct-audio,.dct-notes{border-top:1px solid var(--line)!important}
-  .dct td.ed::before{content:attr(data-l);display:block;padding:8px 10px 0;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
-  .dct td.ed textarea{font-size:15px}
+  /* découpage : le tableau reste en lignes ; il défile sur le côté */
+  .dc .dct-wrap{margin-inline:-1px;border-radius:0;-webkit-overflow-scrolling:touch}
   /* cibles tactiles plus grandes */
   .dc-done input,.p-done input,.d-done input,.addsc input{width:26px;height:26px}
   .dc-done{bottom:8px;right:8px}
