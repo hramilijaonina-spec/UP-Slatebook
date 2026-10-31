@@ -764,7 +764,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage */
-const APP_VERSION="1.7.5";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.8.0";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -893,7 +893,7 @@ function showBanner(t){const b=$("#banner");b.textContent=t;b.hidden=false;}
 
 function openProject(pid){
   S.unsubP.forEach(u=>u());S.unsubP=[];
-  S.pid=pid;S.scenes=[];S.elements=[];S.comments=[];S.shots=[];S.backups=[];S.days=[];S.locations=[];S.sid=null;store.set("upsb.pid",pid);DEC.view="edit";
+  S.pid=pid;S.scenes=[];S.elements=[];S.comments=[];S.shots=[];S.backups=[];S.days=[];S.locations=[];S.sid=null;store.set("upsb.pid",pid);DEC.view="edit";H.undo=[];H.redo=[];H.shadow.clear();
   const pp=S.projects.find(p=>p.id===pid);if(pp)store.set("upsb.ep."+seriesKey(pp),pid);
   const b=base();const onErr=e=>toast("Synchronisation interrompue ("+e.code+")");
   S.unsubP.push(S.db.collection(b+"/scenes").onSnapshot(snap=>{
@@ -2289,7 +2289,7 @@ const MOVES=["Fixe","Panoramique","Travelling avant","Travelling arrière","Trav
 const ANGLES=["Normal","Face caméra","Plongée","Contre-plongée","Amorce (par-dessus l'épaule)","Subjectif","Plan débullé"];
 const EFFECTS=["—","Arrêt sur image","Ralenti","Accéléré","Time-lapse"];
 const SHOT_VB={PG:[-190,-150,480,270],PE:[-80,-36,260,146.25],PM:[-50,-6,200,112.5],PA:[-15.8,-4,131.6,74],PRT:[-0.6,-2,101.3,57],PRP:[14.4,0,71.1,40],GP:[30.4,1.5,39.1,22],TGP:[41.1,7,17.8,10],"2S":[-10.8,-4,131.6,74]};
-const DEC={view:"edit",ai:new Set(),prog:new Map(),timers:new Map(),focus:null,showOpt:store.get("upsb.dec.opt")!=="0"};
+const DEC={view:"edit",ai:new Set(),prog:new Map(),timers:new Map(),pend:new Map(),focus:null,showOpt:store.get("upsb.dec.opt")!=="0"};
 
 /* vignettes de cadre dessinées selon la valeur de plan */
 function dcFigure(x){return `<g class="dc-fig" transform="translate(${x-50},0)"><circle cx="50" cy="12" r="7"/><path d="M38 24 Q50 19 62 24 L60 56 L40 56 Z" stroke-width="1"/><line x1="39" y1="26" x2="35" y2="58"/><line x1="61" y1="26" x2="65" y2="58"/><line x1="45" y1="57" x2="43" y2="98"/><line x1="55" y1="57" x2="57" y2="98"/><circle class="eye" cx="47.4" cy="11.6" r="1"/><circle class="eye" cx="52.6" cy="11.6" r="1"/></g>`;}
@@ -2309,7 +2309,7 @@ const sumDur=list=>list.reduce((a,x)=>a+(Number(x.dur)||0),0);
 const isOpt=x=>x.dur!==undefined&&x.dur!==null&&x.dur!==""&&Number(x.dur)===0;
 function fmtDur(sec){sec=Math.round((Number(sec)||0)*10)/10;const m=Math.floor(sec/60);const s=Math.round((sec-m*60)*10)/10;return m+":"+(s<10?"0":"")+String(s).replace(".",",");}
 function parseDur(v){v=String(v||"").trim().replace(",",".");if(!v)return 0;const m=v.match(/^(\d+):(\d{1,2}(?:\.\d+)?)$/);if(m)return Number(m[1])*60+Number(m[2]);return Math.max(0,Number(v)||0);}
-const shotDoc=id=>S.db.doc(base()+"/shots/"+id);
+const shotDoc=id=>trk(base()+"/shots/"+id);
 function dcGrow(t){t.style.height="auto";t.style.height=(t.scrollHeight+2)+"px";}
 
 /* rendu */
@@ -2340,7 +2340,8 @@ function decEditHTML(){
       <div class="stat"><b>${cut}<small> / ${S.scenes.length}</small></b><span>scènes découpées</span></div>
     </div>
     <div class="actions">
-      ${S.canWrite&&!S.aiOff?`<button class="btn icbtn" id="dc-sync" title="Mettre à jour le scénario d'après le découpage" aria-label="Mettre à jour le scénario d'après le découpage" ${S.busy||!S.shots.length?"disabled":""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20.5V16h-4.5"/></svg></button>`:""}
+      ${S.canWrite?`<button class="btn icbtn" id="dc-undo" type="button" aria-label="Annuler" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button class="btn icbtn" id="dc-redo" type="button" aria-label="Rétablir" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>`:""}
+      ${S.canWrite?`<button class="btn icbtn" id="dc-sync" title="Mettre à jour le scénario d'après le découpage" aria-label="Mettre à jour le scénario d'après le découpage" ${S.busy||!S.shots.length?"disabled":""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20.5V16h-4.5"/></svg></button>`:""}
       ${S.canWrite&&scriptBackup()?`<button class="btn ghost small" id="dc-unsync" title="Rétablir le scénario d'avant la dernière mise à jour">↶ Annuler la mise à jour du scénario</button>`:""}
       ${canAI?`<button class="btn primary" id="dc-ai" ${S.busy||!todo?"disabled":""} title="${todo?"Propose les plans des scènes pas encore découpées":"Toutes les scènes ont déjà des plans"}">Découper avec l'IA${todo&&todo<S.scenes.length?" · "+todo+" scène"+(todo>1?"s":""):""}</button>`:""}
     </div></div>`;
@@ -2379,8 +2380,8 @@ function shotRowHTML(x,i,seq){
 }
 function bindDec(box){
   const on=(id,fn)=>{const b=document.getElementById(id);if(b)b.onclick=fn;};
-  on("dc-ai",decoupeAll);on("dc-menu",e=>decMenu(e.currentTarget));on("dc-sync",confirmScriptSync);on("dc-unsync",confirmScriptUndo);{const ex=$("#dc-export");if(ex)ex.onclick=e=>decExportMenu(e.currentTarget);}
-  box.querySelectorAll(".dc-ai1").forEach(b=>b.onclick=()=>decoupeScene(b.dataset.sid));
+  on("dc-ai",decoupeAll);on("dc-menu",e=>decMenu(e.currentTarget));on("dc-sync",confirmScriptSync);on("dc-unsync",confirmScriptUndo);on("dc-undo",hUndo);on("dc-redo",hRedo);hButtons();{const ex=$("#dc-export");if(ex)ex.onclick=e=>decExportMenu(e.currentTarget);}
+  box.querySelectorAll(".dc-ai1").forEach(b=>b.onclick=()=>{const s=scene(b.dataset.sid);hGroup("Découpage IA de la scène "+(s?s.num:""),()=>decoupeScene(b.dataset.sid));});
   box.querySelectorAll(".dc-redo").forEach(b=>b.onclick=()=>confirmRedo(b.dataset.sid));
   box.querySelectorAll(".dc-add").forEach(b=>b.onclick=()=>addShot(b.dataset.sid,null));
   const shotOf=el=>S.shots.find(y=>y.id===el.closest("[data-id]")?.dataset.id);
@@ -2417,7 +2418,7 @@ function decMenu(anchor){
       <button class="btn small" type="button" data-ex="csv" ${has?"":"disabled"}>CSV pour Excel</button></div>`:""}
     <div class="mfoot"><span></span><button class="btn small" type="button" data-close>Fermer</button></div>`;
   const tg=d.querySelector("#dcm-target");
-  const saveT=()=>{if(!S.canWrite)return;const v=parseDur(tg.value);if(v===(Number(P()?.targetSec)||0))return;S.db.doc("projects/"+S.pid).update({targetSec:v}).catch(writeErr);};
+  const saveT=()=>{if(!S.canWrite)return;const v=parseDur(tg.value);if(v===(Number(P()?.targetSec)||0))return;trk("projects/"+S.pid).update({targetSec:v},{label:"Durée cible"}).catch(writeErr);};
   tg.onchange=saveT;tg.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();saveT();tg.blur();}};
   const op=d.querySelector("#dcm-opt");op.onchange=()=>{DEC.showOpt=op.checked;store.set("upsb.dec.opt",op.checked?"1":"0");render();};
   d.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{saveT();closeDcPop();const k=b.dataset.ex;if(k==="csv")exportDecCSV();else runDecExport(k);});
@@ -2461,33 +2462,38 @@ function openPlanPop(x,anchor){
 }
 
 /* écritures */
-function decNow(id,f,v){const k=id+"|"+f;clearTimeout(DEC.timers.get(k));DEC.timers.delete(k);
-  const x=S.shots.find(y=>y.id===id);if(!x||x[f]===v)return;x[f]=v;
-  shotDoc(id).update({[f]:v,updatedAt:Date.now(),updatedBy:S.me?.id||null}).catch(writeErr);
+const FLABEL={action:"description",sound:"audio",notes:"notes",type:"type de plan",move:"mouvement",angle:"angle",effect:"effet",dur:"durée"};
+function decNow(id,f,v){const k=id+"|"+f;clearTimeout(DEC.timers.get(k));DEC.timers.delete(k);DEC.pend.delete(k);
+  const x=S.shots.find(y=>y.id===id);if(!x||x[f]===v)return;const{id:_i,...before}=hClone(x);x[f]=v;
+  shotDoc(id).update({[f]:v,updatedAt:Date.now(),updatedBy:S.me?.id||null},{before,label:"Plan "+shotNum(x)+" : "+(FLABEL[f]||f),key:k}).catch(writeErr);
   if(f==="type"||f==="effect"||f==="dur")render();}
-function decLater(id,f,v){const k=id+"|"+f;clearTimeout(DEC.timers.get(k));DEC.timers.set(k,setTimeout(()=>decNow(id,f,v),800));}
+function decLater(id,f,v){const k=id+"|"+f;clearTimeout(DEC.timers.get(k));DEC.pend.set(k,{id,f,v});DEC.timers.set(k,setTimeout(()=>decNow(id,f,v),800));}
 function newShotPos(sid,after){const list=shotsOf(sid);
   if(!after)return(list.length?(list[list.length-1].pos||0):0)+1024;
   const i=list.indexOf(after);const nx=list[i+1];const a=after.pos||0;return nx?(a+(nx.pos||0))/2:a+1024;}
 async function addShot(sid,after,data){
-  const ref=S.db.collection(base()+"/shots").doc();
-  try{await ref.set({type:"PM",move:"Fixe",angle:"Normal",effect:"—",dur:3,action:"",sound:"",notes:"",img:null,...(data||{}),
-      sceneId:sid,pos:newShotPos(sid,after),src:"manual",createdAt:Date.now(),createdBy:S.me?.id||null});DEC.focus=ref.id;render();}
+  const ref=S.db.collection(base()+"/shots").doc();const sc=scene(sid);
+  try{await shotDoc(ref.id).set({type:"PM",move:"Fixe",angle:"Normal",effect:"—",dur:3,action:"",sound:"",notes:"",img:null,...(data||{}),
+      sceneId:sid,pos:newShotPos(sid,after),src:"manual",createdAt:Date.now(),createdBy:S.me?.id||null},{label:"Plan ajouté"+(sc?" (scène "+sc.num+")":"")});DEC.focus=ref.id;render();}
   catch(e){writeErr(e);}
 }
 async function shotAct(x,a){
   const list=shotsOf(x.sceneId);const i=list.indexOf(x);
+  const LBL={up:"Plan "+shotNum(x)+" monté",down:"Plan "+shotNum(x)+" descendu",dup:"Plan "+shotNum(x)+" dupliqué",after:"Plan ajouté après le "+shotNum(x),del:"Plan "+shotNum(x)+" supprimé"};
+  return hGroup(LBL[a]||"Plan modifié",()=>shotActRun(x,a,list,i));
+}
+async function shotActRun(x,a,list,i){
   try{
     if(a==="up"||a==="down"){const j=i+(a==="up"?-1:1);if(j<0||j>=list.length)return;const y=list[j];let px=x.pos||0,py=y.pos||0;
       if(px===py){await chunked(list.map((z,k)=>({z,k})),5,({z,k})=>shotDoc(z.id).update({pos:(k+1)*1024}));px=(i+1)*1024;py=(j+1)*1024;}
       await shotDoc(x.id).update({pos:py});await shotDoc(y.id).update({pos:px});return;}
     if(a==="dup"){const{id,pos,sceneId,createdAt,createdBy,updatedAt,updatedBy,src,...rest}=x;await addShot(x.sceneId,x,rest);return;}
     if(a==="after"){await addShot(x.sceneId,x);return;}
-    if(a==="del"){const{id,...data}=x;const label=shotNum(x);await shotDoc(id).delete();
-      toastUndo("Plan "+label+" supprimé.","Annuler",()=>S.db.doc(base()+"/shots/"+id).set(data).catch(writeErr));return;}
+    if(a==="del"){const label=shotNum(x);await shotDoc(x.id).delete();
+      setTimeout(()=>toastUndo("Plan "+label+" supprimé.","Annuler",()=>hUndo()),0);return;}
   }catch(e){writeErr(e);}
 }
-async function moveShotTo(x,sid){try{await shotDoc(x.id).update({sceneId:sid,pos:newShotPos(sid,null)});DEC.focus=x.id;}catch(e){writeErr(e);}}
+async function moveShotTo(x,sid){const sc=scene(sid);try{await shotDoc(x.id).update({sceneId:sid,pos:newShotPos(sid,null)},{label:"Plan "+shotNum(x)+" déplacé"+(sc?" vers la scène "+sc.num:"")});DEC.focus=x.id;}catch(e){writeErr(e);}}
 function toastUndo(msg,label,fn,ms=6000){
   const t=document.createElement("div");t.className="toast";t.setAttribute("role","status");t.style.cssText="display:flex;gap:14px;align-items:center";
   const sp=document.createElement("span");sp.textContent=msg;const b=document.createElement("button");b.type="button";b.textContent=label;
@@ -2565,7 +2571,7 @@ async function decoupeScene(sid,opts={}){
       try{res=await S.sample.json(decPrompt(s,parts[k],k,parts.length,prev,opts.extra),{signal:opts.signal});}
       catch(e){const sv=e?.text?salvageShots(e.text):[];if(sv.length)res={shots:sv};else throw e;}
       const items=(Array.isArray(res?.shots)?res.shots:Array.isArray(res)?res:[]).slice(0,80).map(validShot);
-      await chunked(items.map((it,i)=>({it,i})),5,({it,i})=>S.db.collection(base()+"/shots").add({...it,img:null,sceneId:sid,pos:pos+(i+1)*1024,src:"ai",createdAt:Date.now(),createdBy:S.me?.id||null}));
+      await chunked(items.map((it,i)=>({it,i})),5,({it,i})=>shotDoc(S.db.collection(base()+"/shots").doc().id).set({...it,img:null,sceneId:sid,pos:pos+(i+1)*1024,src:"ai",createdAt:Date.now(),createdBy:S.me?.id||null}));
       pos+=(items.length+1)*1024;made+=items.length;if(items.length)prev=items[items.length-1];
     }
     if(!made){if(!opts.bulk)toast("Scène "+s.num+" : l'IA n'a proposé aucun plan. Réessaie ou ajoute les plans à la main.");return"fail";}
@@ -2584,7 +2590,8 @@ async function decoupeScene(sid,opts={}){
     toast("Scène "+s.num+" : le découpage s'est arrêté ("+code+")"+(made?" après "+made+" plans. Utilise « + Ajouter un plan » pour compléter, ou redécoupe la scène.":". Relance-le depuis la scène."),6000);return made?"done":"fail";
   }finally{DEC.ai.delete(sid);DEC.prog.delete(sid);render();}
 }
-async function decoupeAll(){
+async function decoupeAll(){return hGroup("Découpage IA",decoupeAllRun);}
+async function decoupeAllRun(){
   if(S.busy)return;
   const todo=S.scenes.filter(s=>!shotsOf(s.id).length).map(s=>s.id);if(!todo.length)return;
   const ctl=new AbortController();S.busy={done:0,total:todo.length,ctl,label:"Découpage"};render();
@@ -2598,7 +2605,7 @@ function confirmRedo(sid){
   const s=scene(sid);const list=shotsOf(sid);const imgs=list.filter(x=>x.img).length;
   const m=modal(`<h3>Redécouper la scène ${esc(s.num)} ?</h3><p>Les ${list.length} plans actuels de cette scène seront remplacés par une nouvelle proposition de l'IA${imgs?`, avec leurs ${imgs} vignette${imgs>1?"s":""} photo`:""}. Les autres scènes ne changent pas.</p><div class="mfoot"><button class="btn" id="rd-c">Annuler</button><button class="btn primary" id="rd-ok">Redécouper</button></div>`);
   m.querySelector("#rd-c").onclick=()=>m.remove();
-  m.querySelector("#rd-ok").onclick=async()=>{m.remove();try{await chunked(list,5,x=>shotDoc(x.id).delete());}catch(e){writeErr(e);return;}decoupeScene(sid);};
+  m.querySelector("#rd-ok").onclick=()=>{m.remove();hGroup("Redécoupage de la scène "+s.num,async()=>{try{await chunked(list,5,x=>shotDoc(x.id).delete());}catch(e){writeErr(e);return;}await decoupeScene(sid);});};
 }
 
 /* vignettes : image importée ou photo prise sur place */
@@ -2648,10 +2655,10 @@ function openThumb(x){
   q("#th-c").onclick=()=>m.remove();
   q("#th-cam").onclick=()=>q("#th-camf").click();q("#th-imp").onclick=()=>q("#th-file").click();
   q("#th-dl").onclick=()=>saveShotImage(x,cur,null,msg);
-  q("#th-rm").onclick=()=>{shotDoc(x.id).update({img:null}).catch(writeErr);m.remove();};
+  q("#th-rm").onclick=()=>{shotDoc(x.id).update({img:null},{label:"Vignette du plan "+shotNum(x)+" retirée"}).catch(writeErr);m.remove();};
   const handle=async(file,fromCam)=>{if(!file)return;q("#th-cam").disabled=q("#th-imp").disabled=true;msg.textContent="Envoi de l'image…";
     try{const blob=await shrinkImage(file);const r=S.assets?await S.assets.upload(blob,{type:blob.type||"image/jpeg"}):await inlineImage(file);
-      await shotDoc(x.id).update({img:r.id,updatedAt:Date.now(),updatedBy:S.me?.id||null});cur=r.id;url=r.url;draw();
+      await shotDoc(x.id).update({img:r.id,updatedAt:Date.now(),updatedBy:S.me?.id||null},{label:"Vignette du plan "+shotNum(x)});cur=r.id;url=r.url;draw();
       q("#th-dl").hidden=!S.dl;q("#th-rm").hidden=false;msg.textContent="Image ajoutée au plan "+shotNum(x)+".";
       if(fromCam&&S.dl)saveShotImage(x,cur,blob,msg);}
     catch(e){msg.textContent=uploadErr(e);}
@@ -2837,7 +2844,8 @@ async function copSend(text){
     else COP.msgs.push({role:"err",text:"Je n'ai pas pu répondre ("+code+"). Reformule ou réessaie."});
   }finally{COP.busy=false;COP.ctl=null;drawCop();}
 }
-async function copApply(m){
+async function copApply(m){return hGroup("UpCopilot : "+String(COP.msgs[COP.msgs.indexOf(m)-1]?.text||"modification").slice(0,40),()=>copApplyRun(m));}
+async function copApplyRun(m){
   if(COP.busy)return;COP.busy=true;m.state="applying";COP.busyText="Application des changements…";drawCop();
   const scenes=new Set(m.actions.map(a=>a._sid).filter(Boolean));
   const snap=S.shots.filter(x=>scenes.has(x.sceneId)).map(x=>JSON.parse(JSON.stringify(x)));
@@ -2846,7 +2854,7 @@ async function copApply(m){
     for(const a of m.actions){
       if(a.op==="update"){if(S.shots.some(x=>x.id===a._id))await shotDoc(a._id).update({...a.f,updatedAt:Date.now(),updatedBy:S.me?.id||null});}
       else if(a.op==="delete"){if(S.shots.some(x=>x.id===a._id))await shotDoc(a._id).delete();}
-      else if(a.op==="target"){await S.db.doc("projects/"+S.pid).update({targetSec:a.seconds});}
+      else if(a.op==="target"){await trk("projects/"+S.pid).update({targetSec:a.seconds});}
     }
     for(const a of m.actions){
       if(a.op==="add"){const after=a._after?S.shots.find(x=>x.id===a._after):null;await addShot(a._sid,after,a.f);}
@@ -2863,13 +2871,14 @@ async function copApply(m){
   }catch(e){m.state="pending";writeErr(e);}
   finally{COP.busy=false;drawCop();}
 }
-async function copUndo(m){
+async function copUndo(m){return hGroup("Annulation UpCopilot",()=>copUndoRun(m));}
+async function copUndoRun(m){
   if(COP.busy||!m.undo)return;COP.busy=true;COP.busyText="Retour à la version précédente…";drawCop();
   try{
     const sc=new Set(m.undo.scenes);
     await chunked(S.shots.filter(x=>sc.has(x.sceneId)),5,x=>shotDoc(x.id).delete());
-    await chunked(m.undo.shots,5,x=>{const{id,...d}=x;return S.db.doc(base()+"/shots/"+id).set(d);});
-    if(m.actions.some(a=>a.op==="target"))await S.db.doc("projects/"+S.pid).update({targetSec:m.undo.target.had||0});
+    await chunked(m.undo.shots,5,x=>{const{id,...d}=x;return shotDoc(id).set(d);});
+    if(m.actions.some(a=>a.op==="target"))await trk("projects/"+S.pid).update({targetSec:m.undo.target.had||0});
     m.state="undone";
   }catch(e){writeErr(e);}
   finally{COP.busy=false;drawCop();}
@@ -2990,12 +2999,55 @@ const scriptBackup=()=>S.backups.find(b=>b.id==="script");
 function confirmScriptSync(){
   const scs=S.scenes.filter(s=>shotsOf(s.id).some(x=>!isOpt(x)));
   if(!scs.length){toast("Aucune scène n'a de plan : il n'y a rien à reporter dans le scénario.");return;}
+  const ai=!!S.sample&&!S.aiOff;
   const m=modal(`<h3>Mettre à jour le scénario ?</h3>
-    <p>Les ${scs.length} scène${scs.length>1?"s":""} qui ont des plans seront réécrite${scs.length>1?"s":""} d'après le découpage : ordre des actions, répliques de la colonne Audio, plans ajoutés ou supprimés. Les plans optionnels sont ignorés et les scènes sans plan ne changent pas.</p>
-    <p class="empty">Le scénario actuel est sauvegardé : le bouton « Annuler » du découpage le remet tel quel.</p>
+    <p>Les ${scs.length} scène${scs.length>1?"s":""} qui ont des plans seront réécrite${scs.length>1?"s":""} d'après le découpage. Les plans optionnels sont ignorés et les scènes sans plan ne changent pas.</p>
+    <fieldset class="row" style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px"><span class="label">Méthode</span>
+      <label><input type="radio" name="ss-m" value="direct" checked> <b>Fidèle au découpage</b> (immédiat) : chaque plan devient son action, et chaque réplique de la colonne Audio devient un personnage et son dialogue. Le scénario reprend exactement le découpage.</label>
+      ${ai?`<label><input type="radio" name="ss-m" value="ai"> <b>Réécrit par l'IA</b> : l'IA rédige le scénario d'après le découpage, dans un style plus littéraire.</label>`:""}
+    </fieldset>
+    <p class="empty">Le scénario actuel est sauvegardé : tu peux revenir en arrière avec ↶ (Annuler) ou « Annuler la mise à jour du scénario ».</p>
     <div class="mfoot"><button class="btn" id="ss-c">Annuler</button><button class="btn primary" id="ss-ok">Mettre à jour</button></div>`);
   m.querySelector("#ss-c").onclick=()=>m.remove();
-  m.querySelector("#ss-ok").onclick=()=>{m.remove();syncScript(scs.map(s=>s.id));};
+  m.querySelector("#ss-ok").onclick=()=>{const mode=m.querySelector('input[name="ss-m"]:checked')?.value||"direct";m.remove();syncScript(scs.map(s=>s.id),mode);};
+}
+/* découpage → blocs de scénario, sans IA */
+const QUOTED=/«\s*([^»]*?)\s*»|"([^"\n]*)"|“([^”]*)”/g;
+const CUE_EXT=/^(OFF|V\.?\s?O\.?|O\.?\s?S\.?|O\.?\s?C\.?|HORS[ -]CHAMP|H\.?C\.?|SUITE|CONT'D)$/i;
+function soundToBlocks(sound){
+  const out=[];
+  for(const raw of String(sound||"").split("\n")){
+    const line=raw.trim();if(!line)continue;
+    const m=line.match(/^([\p{Lu}0-9][\p{Lu}0-9'’ .\-]*?)\s*((?:\([^)]*\)\s*)*)\s*:\s*(.+)$/u);
+    if(!m||!/\p{Lu}{2}/u.test(m[1])){out.push({t:"a",x:line});continue;}
+    const name=m[1].trim();const parens=[...m[2].matchAll(/\(([^)]*)\)/g)].map(p=>p[1].trim());
+    const ext=parens.filter(p=>CUE_EXT.test(p));const dir=parens.filter(p=>!CUE_EXT.test(p));
+    out.push({t:"c",x:(name+(ext.length?" ("+ext.join(") (").toUpperCase()+")":"")).toUpperCase()});
+    if(dir.length)out.push({t:"p",x:"("+dir.join(", ")+")"});
+    const rest=m[3].trim();
+    if(/[«"“]/.test(rest)){
+      let last=0;QUOTED.lastIndex=0;let q;
+      while((q=QUOTED.exec(rest))){const between=rest.slice(last,q.index).trim();
+        if(between){const pm=between.match(/^\(([^)]*)\)$/);out.push(pm?{t:"p",x:"("+pm[1].trim()+")"}:{t:"p",x:"("+between.replace(/^\(|\)$/g,"")+")"});}
+        const d=(q[1]??q[2]??q[3]??"").trim();if(d)out.push({t:"d",x:d});last=q.index+q[0].length;}
+      const tail=rest.slice(last).trim();if(tail)out.push({t:"p",x:"("+tail.replace(/^\(|\)$/g,"")+")"});
+    }else out.push({t:"d",x:rest});
+  }
+  return out;
+}
+function shotsToBlocks(list){
+  const out=[];
+  for(const x of list){
+    const a=String(x.action||"").trim();if(a)out.push({t:"a",x:a});
+    for(const b of soundToBlocks(x.sound)){
+      const prev=out[out.length-1];
+      if(b.t==="c"&&out.length>=2){/* même personnage qui continue : on ne répète pas son nom */
+        let k=out.length-1;while(k>=0&&(out[k].t==="d"||out[k].t==="p"))k--;
+        if(k>=0&&out[k].t==="c"&&out[k].x===b.x&&k<out.length-1)continue;}
+      if(b.t==="a"&&prev&&prev.t==="a"&&prev.x===b.x)continue;
+      out.push(b);}
+  }
+  return out;
 }
 function syncPrompt(s,list){
   const cut=v=>String(v||"").replace(/\s+/g," ").trim();
@@ -3017,23 +3069,28 @@ ${(s.body||bodyFromBlocks(sceneBlocks(s))||"").slice(0,14000)}
 Découpage (plans dans l'ordre : numéro | valeur | durée | action | son) :
 ${list.map(x=>`${shotNum(x)} | ${SHOT_T[x.type]||x.type} | ${x.dur} s | ${cut(x.action)} | ${cut(x.sound)}`).join("\n")}`;
 }
-async function syncScript(sids){
+async function syncScript(sids,mode){return hGroup(mode==="ai"?"Scénario réécrit par l'IA":"Scénario mis à jour d'après le découpage",()=>syncScriptRun(sids,mode));}
+async function syncScriptRun(sids,mode){
   if(S.busy)return;
-  await flushEditor();
+  await hFlush();
   const scs=sids.map(scene).filter(Boolean);
-  try{await S.db.doc(base()+"/backups/script").set({at:Date.now(),by:S.me?.id||null,scenes:scs.map(s=>({id:s.id,num:s.num,heading:s.heading,blocks:sceneBlocks(s),body:s.body||"",eighths:s.eighths||1}))});}
+  try{await trk(base()+"/backups/script").set({at:Date.now(),by:S.me?.id||null,scenes:scs.map(s=>({id:s.id,num:s.num,heading:s.heading,blocks:sceneBlocks(s),body:s.body||"",eighths:s.eighths||1}))});}
   catch(e){writeErr(e);return;}
   const ctl=new AbortController();S.busy={done:0,total:scs.length,ctl,label:"Scénario"};render();
-  let done=0,failed=[];
+  let done=0,same=0,failed=[];
   for(const s of scs){if(ctl.signal.aborted)break;
     try{
       const list=shotsOf(s.id).filter(x=>!isOpt(x));
-      let res;try{res=await S.sample.json(syncPrompt(s,list),{signal:ctl.signal});}
-      catch(e){if(e?.text){const j=String(e.text);try{res=JSON.parse(j.slice(j.indexOf("{"),j.lastIndexOf("}")+1));}catch{throw e;}}else throw e;}
-      const blocks=(Array.isArray(res?.blocks)?res.blocks:[]).filter(b=>b&&BT[b.t]&&b.t!=="h"&&typeof b.x==="string"&&b.x.trim())
-        .map(b=>({t:b.t,x:b.t==="c"||b.t==="t"||b.t==="s"?b.x.trim().toUpperCase():b.x.trim()}));
+      let blocks;
+      if(mode==="ai"){
+        let res;try{res=await S.sample.json(syncPrompt(s,list),{signal:ctl.signal});}
+        catch(e){if(e?.text){const j=String(e.text);try{res=JSON.parse(j.slice(j.indexOf("{"),j.lastIndexOf("}")+1));}catch{throw e;}}else throw e;}
+        blocks=(Array.isArray(res?.blocks)?res.blocks:[]).filter(b=>b&&BT[b.t]&&b.t!=="h"&&typeof b.x==="string"&&b.x.trim())
+          .map(b=>({t:b.t,x:b.t==="c"||b.t==="t"||b.t==="s"?b.x.trim().toUpperCase():b.x.trim()}));
+      }else blocks=shotsToBlocks(list);
       if(!blocks.length)throw{code:"vide"};
-      await S.db.doc(base()+"/scenes/"+s.id).update({blocks,body:bodyFromBlocks(blocks),eighths:Math.max(1,Math.round(sceneLines({blocks})/LINES_PER_PAGE*8)),updatedAt:Date.now(),updatedBy:S.me?.id||null});
+      if(JSON.stringify(blocks)===JSON.stringify(sceneBlocks(s))){same++;S.busy.done++;render();continue;}
+      await trk(base()+"/scenes/"+s.id).update({blocks,body:bodyFromBlocks(blocks),eighths:Math.max(1,Math.round(sceneLines({blocks})/LINES_PER_PAGE*8)),updatedAt:Date.now(),updatedBy:S.me?.id||null});
       ED.sigs.delete(s.id);done++;
     }catch(e){const code=e?.code||"upstream_error";
       if(code==="cancelled")break;
@@ -3042,7 +3099,7 @@ async function syncScript(sids){
       failed.push(s.num);}
     S.busy.done++;render();}
   S.busy=null;render();
-  toast(done+" scène"+(done>1?"s":"")+" du scénario mise"+(done>1?"s":"")+" à jour"+(failed.length?" · échec pour la scène "+failed.join(", "):"")+". Tu peux annuler depuis le découpage.",6000);
+  toast(done+" scène"+(done>1?"s":"")+" du scénario mise"+(done>1?"s":"")+" à jour"+(same?" · "+same+" déjà identique"+(same>1?"s":""):"")+(failed.length?" · échec pour la scène "+failed.join(", "):"")+". ↶ pour annuler.",6000);
 }
 function confirmScriptUndo(){
   const b=scriptBackup();if(!b)return;
@@ -3050,12 +3107,68 @@ function confirmScriptUndo(){
   const m=modal(`<h3>Annuler la mise à jour du scénario ?</h3><p>Les ${b.scenes.length} scène${b.scenes.length>1?"s":""} modifiée${b.scenes.length>1?"s":""} le ${esc(when)} reprennent leur texte d'avant. Les changements faits depuis dans ces scènes seront perdus.</p>
     <div class="mfoot"><button class="btn" id="su-c">Garder</button><button class="btn primary" id="su-ok">Rétablir l'ancien scénario</button></div>`);
   m.querySelector("#su-c").onclick=()=>m.remove();
-  m.querySelector("#su-ok").onclick=async()=>{m.remove();
-    try{await flushEditor();
-      await chunked(b.scenes.filter(x=>scene(x.id)),5,x=>{ED.sigs.delete(x.id);return S.db.doc(base()+"/scenes/"+x.id).update({blocks:x.blocks,body:x.body,eighths:x.eighths,updatedAt:Date.now(),updatedBy:S.me?.id||null});});
-      await S.db.doc(base()+"/backups/script").delete();toast("Scénario rétabli.");}
-    catch(e){writeErr(e);}};
+  m.querySelector("#su-ok").onclick=()=>{m.remove();hGroup("Scénario rétabli",async()=>{
+    try{await hFlush();
+      await chunked(b.scenes.filter(x=>scene(x.id)),5,x=>{ED.sigs.delete(x.id);return trk(base()+"/scenes/"+x.id).update({blocks:x.blocks,body:x.body,eighths:x.eighths,updatedAt:Date.now(),updatedBy:S.me?.id||null});});
+      await trk(base()+"/backups/script").delete();toast("Scénario rétabli.");}
+    catch(e){writeErr(e);}});};
 }
+
+/* ---------- annuler / rétablir (découpage et mise à jour du scénario) ---------- */
+const H={undo:[],redo:[],grp:null,busy:false,applying:false,shadow:new Map()};
+const hClone=v=>v==null?null:JSON.parse(JSON.stringify(v));
+function hCur(path){
+  let v=null;const b=base()+"/";
+  if(path==="projects/"+S.pid)v=P()||null;
+  else if(path.startsWith(b)){const[col,id]=path.slice(b.length).split("/");
+    const arr=col==="shots"?S.shots:col==="scenes"?S.scenes:col==="backups"?S.backups:null;if(arr)v=arr.find(x=>x.id===id)||null;}
+  if(!v&&H.shadow.has(path))return hClone(H.shadow.get(path));
+  if(!v)return null;const{id,...rest}=v;return hClone(rest);
+}
+function hRec(path,before,after,label,key){
+  if(H.applying)return;H.shadow.set(path,hClone(after));
+  if(H.grp){H.grp.ops.push({path,before,after:hClone(after)});return;}
+  const last=H.undo[H.undo.length-1];
+  if(key&&last&&last.key===key&&Date.now()-last.at<6000&&last.ops.length===1&&last.ops[0].path===path){last.ops[0].after=hClone(after);last.at=Date.now();}
+  else{H.undo.push({label:label||"Modification",key:key||null,at:Date.now(),ops:[{path,before,after:hClone(after)}]});if(H.undo.length>80)H.undo.shift();}
+  H.redo=[];hButtons();
+}
+/* référence suivie : chaque écriture garde l'état d'avant pour pouvoir l'annuler */
+function trk(path){const ref=S.db.doc(path);return{
+  async set(d,o={}){const before=o.before!==undefined?o.before:hCur(path);await ref.set(d);hRec(path,before,d,o.label,o.key);},
+  async update(d,o={}){const before=o.before!==undefined?o.before:hCur(path);await ref.update(d);hRec(path,before,before?{...before,...d}:d,o.label,o.key);},
+  async delete(o={}){const before=o.before!==undefined?o.before:hCur(path);await ref.delete();hRec(path,before,null,o.label,o.key);}};}
+async function hGroup(label,fn){
+  if(H.grp)return fn();
+  H.grp={label,ops:[],at:Date.now()};
+  try{return await fn();}
+  finally{const g=H.grp;H.grp=null;if(g.ops.length){H.undo.push(g);if(H.undo.length>80)H.undo.shift();H.redo=[];}hButtons();}
+}
+async function hApply(path,val){const r=S.db.doc(path);if(val==null){try{await r.delete();}catch{}}else await r.set(val);H.shadow.set(path,hClone(val));}
+async function hFlush(){for(const[k,pd]of[...DEC.pend])decNow(pd.id,pd.f,pd.v);await flushEditor();}
+async function hStep(dir){
+  if(H.busy||H.grp||S.busy)return;
+  await hFlush();
+  const from=dir<0?H.undo:H.redo,to=dir<0?H.redo:H.undo;const st=from.pop();if(!st){hButtons();return;}
+  H.busy=true;H.applying=true;hButtons();
+  try{const ops=dir<0?[...st.ops].reverse():st.ops;for(const o of ops)await hApply(o.path,dir<0?o.before:o.after);
+    st.at=0;to.push(st);toast((dir<0?"Annulé : ":"Rétabli : ")+st.label);}
+  catch(e){from.push(st);writeErr(e);}
+  finally{H.applying=false;H.busy=false;ED.sigs.clear();render();hButtons();}
+}
+const hUndo=()=>hStep(-1),hRedo=()=>hStep(1);
+function hButtons(){
+  const u=$("#dc-undo"),r=$("#dc-redo");const lu=H.undo[H.undo.length-1],lr=H.redo[H.redo.length-1];
+  if(u){u.disabled=!lu||H.busy||!!H.grp;u.title=lu?"Annuler : "+lu.label+" (⌘Z)":"Rien à annuler";}
+  if(r){r.disabled=!lr||H.busy||!!H.grp;r.title=lr?"Rétablir : "+lr.label+" (⇧⌘Z)":"Rien à rétablir";}
+}
+document.addEventListener("keydown",e=>{
+  if(S.tab!=="dec"||!S.pid||!S.canWrite||document.querySelector(".scrim"))return;
+  const mod=e.metaKey||e.ctrlKey;if(!mod)return;const k=e.key.toLowerCase();
+  if(k!=="z"&&k!=="y")return;
+  const tg=e.target;if(tg.closest&&tg.closest("input,textarea,select,[contenteditable]"))return;
+  e.preventDefault();if(k==="y"||e.shiftKey)hRedo();else hUndo();
+});
 
 /* ---------- tabs + keyboard ---------- */
 function goTab(t){if(S.tab===t)return;flushEditor().then(()=>{S.tab=t;$("#desk").innerHTML="";render();});}
