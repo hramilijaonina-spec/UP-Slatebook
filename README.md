@@ -15,6 +15,7 @@ Dépouillement de scénario et plan de travail collaboratifs pour l'équipe UP. 
 - Scénario à plusieurs épisodes : chaque épisode devient un projet, regroupés en série (ligne « Projet en cours » avec les épisodes).
 - Plan de travail : lieux de tournage, journées en glisser-déposer, plan proposé automatiquement, alertes (journée chargée, déplacements, rôles éclatés).
 - Suivi du tournage : case à cocher sur chaque plan du découpage (plan fait) et sur chaque scène du plan de travail (scène tournée) ; la ligne passe en vert clair, le compteur « scènes tournées » est dans le plan de travail.
+- Plan de travail en journées repliables (J1, J2…) : date, scènes tournées (ex. 3/5), pages, lieux, alertes ; une journée dépliée montre ses scènes, « + Ajouter des scènes » et × pour en retirer ; case de la journée liée aux cases des scènes (tout coché = journée cochée, et inversement) ; « Tout déplier / Tout replier ».
 - Exports (menu ☰ → Exporter) : fiches de dépouillement, plan de travail (HTML imprimable, CSV), découpage technique (CSV). Les rapports d'éléments sont dans le Plan de travail → Rapports.
 - Temps réel pour toute l'équipe ; connexion avec Google ou par lien e-mail (toute adresse, sans mot de passe).
 - Hors ligne : l'app s'ouvre sans réseau, les modifications sont gardées sur l'appareil et envoyées au retour de la connexion.
