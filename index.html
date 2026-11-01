@@ -986,7 +986,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage */
-const APP_VERSION="1.18.2";const APP_DATE="29 oct. 2026";
+const APP_VERSION="1.18.3";const APP_DATE="29 oct. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -2540,7 +2540,7 @@ const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso+"T12:00:00");return is
 function keepFocus(fn){
   const a=document.activeElement;const id=a&&a.id;const val=a&&"value" in a?a.value:null;let ss=null;try{ss=a.selectionStart;}catch{}
   fn();
-  if(id){const n=document.getElementById(id);if(n&&n!==a){n.focus();if(val!==null)n.value=val;try{if(ss!=null)n.setSelectionRange(ss,ss);}catch{}}}
+  if(id){const n=document.getElementById(id);if(n&&n!==a){n.focus({preventScroll:true});if(val!==null)n.value=val;try{if(ss!=null)n.setSelectionRange(ss,ss);}catch{}}}
 }
 
 function planGroups(scenes){
@@ -2975,14 +2975,35 @@ const shotDoc=id=>trk(base()+"/shots/"+id);
 function dcGrow(t){t.style.height="auto";t.style.height=(t.scrollHeight+2)+"px";}
 
 /* rendu */
+function decSig(){
+  const im=v=>v?String(v).length+String(v).slice(-16):"";
+  return JSON.stringify([S.pid,S.canWrite,S.aiOff,!!S.busy,DEC.showOpt,Number(P()?.targetSec)||0,!!scriptBackup(),[...DEC.ai],[...DEC.prog.entries()],
+    S.scenes.map(s=>[s.id,s.num,s.heading,s.status,s.filmed]),
+    S.shots.map(x=>[x.id,x.sceneId,x.pos,x.dur,x.type,x.move,x.angle,x.effect,x.action,x.sound,x.notes,x.done,im(x.img)])]);
+}
+const dcEditing=box=>{const a=document.activeElement;return !!(a&&box&&box.contains(a)&&a.matches("textarea,input,select"));};
+/* pendant l'édition : on met seulement à jour les autres cellules (modifs des autres membres), sans toucher à celle où l'on tape */
+function dcSoftUpdate(box){
+  const a=document.activeElement;
+  box.querySelectorAll("textarea[data-f]").forEach(el=>{if(el===a)return;const tr=el.closest("[data-id]");const x=tr&&S.shots.find(y=>y.id===tr.dataset.id);if(!x)return;
+    const v=String(x[el.dataset.f]||"");if(el.value!==v){el.value=v;if(el.classList.contains("dc-hl-ta"))el.previousElementSibling.innerHTML=hlQuotes(v);dcGrow(el);}});
+  box.querySelectorAll(".dc-donecb").forEach(c=>{const tr=c.closest("[data-id]");const x=tr&&S.shots.find(y=>y.id===tr.dataset.id);if(x&&c.checked!==!!x.done){c.checked=!!x.done;tr.classList.toggle("done",!!x.done);}});
+}
 function renderDecoupage(){
   const box=$("#dc");if(!box||!S.pid)return;
-  const st=box.scrollTop;
+  if(box.childElementCount&&dcEditing(box)){DEC.renderPending=true;dcSoftUpdate(box);hButtons();return;}
+  const sig=decSig();
+  if(box.childElementCount&&box.dataset.sig===sig&&!DEC.focus){DEC.renderPending=false;hButtons();dcNavUpdate();return;}
+  box.dataset.sig=sig;DEC.renderPending=false;
+  const scEl=box.scrollHeight>box.clientHeight+1&&/(auto|scroll)/.test(getComputedStyle(box).overflowY)?box:dcScroller(box);
+  const st=scEl.scrollTop,sl=box.querySelector(".dct-wrap")?.scrollLeft||0;
   keepFocus(()=>{box.innerHTML=decEditHTML();});
-  box.scrollTop=st;
+  const w=box.querySelector(".dct-wrap");if(w)w.scrollLeft=sl;
   bindDec(box);
+  DEC.navOpen=false;dcNavDraw();
   box.querySelectorAll("textarea.dc-grow").forEach(dcGrow);
-  DEC.navOpen=false;dcNavUpdate(true);
+  scEl.scrollTop=st;
+  dcNavUpdate(true);
   if(DEC.focus){const el=document.getElementById("dc-a-"+DEC.focus);
     if(el){DEC.focus=null;const row=el.closest("tr");row.classList.add("dc-flash");row.scrollIntoView({block:"nearest"});if(S.canWrite)el.focus({preventScroll:true});}}
 }
@@ -3029,6 +3050,9 @@ function dcNavDraw(){
 document.addEventListener("scroll",()=>{if(S.tab!=="dec"||!$("#dc-scnav"))return;if(DEC.navRaf)return;DEC.navRaf=requestAnimationFrame(()=>{DEC.navRaf=0;dcNavUpdate();});},true);
 document.addEventListener("click",e=>{if(DEC.navOpen&&e.target.isConnected&&!e.target.closest("#dc-scnav")){DEC.navOpen=false;dcNavDraw();}});
 document.addEventListener("keydown",e=>{if(DEC.navOpen&&e.key==="Escape"){DEC.navOpen=false;dcNavDraw();}});
+/* quand on quitte l'édition, on applique les changements mis de côté */
+document.addEventListener("focusout",e=>{if(!DEC.renderPending||!e.target.closest?.("#dc"))return;
+  setTimeout(()=>{if(DEC.renderPending&&!dcEditing($("#dc")))render();},120);});
 function dcOpts(arr,val,pairs){return arr.map(o=>{const v=pairs?o[0]:o,t=pairs?o[0]+" · "+o[1]:o;return `<option value="${esc(v)}"${v===val?" selected":""}>${esc(t)}</option>`;}).join("");}
 function thumbHTML(x){
   const inner=x.img?`<img src="${esc(imgSrc(x.img))}" alt="Vignette du plan ${esc(shotNum(x))}" loading="lazy">`:picto(x.type);
@@ -4103,6 +4127,7 @@ $("#b-search").onclick=()=>openSearch();
     if(!matchMedia("(max-width:760px)").matches){document.body.classList.remove("hdr-hide");return;}
     const el=e.target===document?document.scrollingElement:e.target;if(!el||el.nodeType!==1)return;
     if(el.closest&&el.closest(".scrim,.pop,.dc-pop,.sc-drop,.cop-panel,.projbar,.tabbar"))return;
+    const ae=document.activeElement;if(ae&&ae.matches&&ae.matches("textarea,input,select,[contenteditable]"))return;
     const y=el.scrollTop;const p=last.has(el)?last.get(el):y;last.set(el,y);
     if(y-p>10&&y>90)document.body.classList.add("hdr-hide");else if(p-y>10||y<30)document.body.classList.remove("hdr-hide");},true);})();
 window.addEventListener("beforeunload",()=>{if(ED.dirty.size)flushEditor();});
