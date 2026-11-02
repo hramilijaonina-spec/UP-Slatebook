@@ -388,6 +388,7 @@ tr.catrow td{background:var(--sunk);font-weight:600;font-size:12.5px}
 
 /* éditeur de scénario */
 .editor{grid-column:1/-1;display:flex;flex-direction:column;min-height:0}
+.ed-bar .h-undo,.ed-bar .h-redo{min-width:32px;padding-inline:6px}
 .ed-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line);background:var(--surface)}
 .ed-types{display:flex;flex-wrap:wrap;gap:4px}
 /* une couleur par type de bloc */
@@ -1045,7 +1046,7 @@ const CATS=[
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 /* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage */
-const APP_VERSION="1.21.0";const APP_DATE="2 nov. 2026";
+const APP_VERSION="1.22.0";const APP_DATE="2 nov. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -1782,8 +1783,8 @@ function cleanupText(){
     ok.disabled=!scs.length&&!els.length;return{ph,scs,els};};
   i.oninput=scan;m.querySelector("#cl-c").onclick=()=>m.remove();
   ok.onclick=async()=>{const r=scan();if(!r)return;ok.disabled=true;ok.textContent="Nettoyage…";
-    try{await chunked(r.scs,5,sc=>S.db.doc(base()+"/scenes/"+sc.id).update({body:stripPhrases(sc.body,[r.ph]),updatedAt:Date.now()}));
-      await chunked(r.els,5,e=>S.db.doc(base()+"/elements/"+e.id).delete());
+    try{await hGroup("Retirer « "+r.ph.slice(0,40)+" »",async()=>{await chunked(r.scs,5,sc=>trk(base()+"/scenes/"+sc.id).update({body:stripPhrases(sc.body,[r.ph]),updatedAt:Date.now()}));
+      await chunked(r.els,5,e=>trk(base()+"/elements/"+e.id).delete());});
       m.remove();toast("Texte retiré de "+r.scs.length+" scène"+(r.scs.length>1?"s":"")+".");}catch(e){m.remove();writeErr(e);}};
 }
 function confirmDelete(){
@@ -2461,11 +2462,12 @@ function renderEditor(){
         <span class="ed-hint">ou Tab · Entrée : bloc suivant · Maj+Entrée : retour à la ligne</span>
         <span class="spacer"></span>
         <span class="ed-stats" id="ed-stats"></span>
+        ${S.canWrite?`<button class="btn ghost small icbtn h-undo" type="button" aria-label="Annuler"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button class="btn ghost small icbtn h-redo" type="button" aria-label="Rétablir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>`:""}
         ${S.canWrite?`<button class="btn small" id="ed-renum">Renuméroter</button>`:""}
         <button class="btn small" id="ed-export">Exporter le scénario</button>
       </div>
       <div class="ed-body"><nav class="ed-nav" id="ed-nav" aria-label="Scènes du scénario"></nav><div class="ed-scroll" id="ed-scroll"><div class="ed-page" id="edpage"></div></div></div>`;
-    bindEditor(root);}
+    bindEditor(root);hButtons();}
   const page=$("#edpage");const locks=edLocks();
   const active=document.activeElement&&page.contains(document.activeElement)?document.activeElement.closest(".ed-scene"):null;
   const seen=new Set();let prev=null;let lines=0;const pages={};
@@ -2614,6 +2616,10 @@ function readSection(sec){return[...sec.querySelectorAll(".sb")].map(el=>({t:el.
 function headingFields(h,old){const ph=parseHeading(h||"");return{heading:ph.heading||"SCÈNE",intExt:ph.intExt,location:ph.location,time:ph.time,dayNight:ph.dayNight||old?.dayNight||""};}
 function cleanBlocks(bl){return bl.filter((b,i)=>b.x.trim()||i===bl.length-1&&bl.length===1).map(b=>({t:b.t,x:b.t==="c"||b.t==="t"||b.t==="s"?b.x.toUpperCase():b.x}));}
 async function commitScene(sid){
+  if(H.applying||ED.hist){return;}
+  const s=scene(sid);return hGroup("Scénario · scène "+(s?.num||""),()=>commitSceneRaw(sid),"ed:"+sid);
+}
+async function commitSceneRaw(sid){
   clearTimeout(ED.timers.get(sid));
   const sec=$("#edpage")?.querySelector(`.ed-scene[data-sid="${CSS.escape(sid)}"]`);const s=scene(sid);
   if(!sec||!s){ED.dirty.delete(sid);return;}
@@ -2634,14 +2640,14 @@ async function commitScene(sid){
     const patch={...headingFields(first.h,s),blocks,body:bodyFromBlocks(blocks),updatedAt:Date.now(),updatedBy:S.me?.id||null};
     patch.eighths=Math.max(1,Math.round(sceneLines({blocks})/LINES_PER_PAGE*8));
     ED.sigs.delete(sid);
-    await S.db.doc(base()+"/scenes/"+sid).update(patch);
+    await trk(base()+"/scenes/"+sid).update(patch);
     if(groups.length){
       const nextS=S.scenes[idx+1];let lo=s.order||0;const hi=nextS?(nextS.order||0):lo+groups.length+1;const step=(hi-lo)/(groups.length+1);
       let lastNum=s.num;let focusId=null;const made=[];let gi=0;
       for(const g of groups){gi++;lo+=step;const ref=S.db.collection(base()+"/scenes").doc();const gb=cleanBlocks(g.blocks.length?g.blocks:[{t:"a",x:""}]);
         lastNum=nextNum(lastNum,made);made.push(lastNum);
-        await ref.set({...headingFields(g.h,s),num:lastNum,order:lo,blocks:gb,body:bodyFromBlocks(gb),status:"todo",synopsis:"",
-          eighths:Math.max(1,Math.round(sceneLines({blocks:gb})/LINES_PER_PAGE*8)),createdAt:Date.now(),createdBy:S.me?.id||null});
+        await trk(base()+"/scenes/"+ref.id).set({...headingFields(g.h,s),num:lastNum,order:lo,blocks:gb,body:bodyFromBlocks(gb),status:"todo",synopsis:"",
+          eighths:Math.max(1,Math.round(sceneLines({blocks:gb})/LINES_PER_PAGE*8)),createdAt:Date.now(),createdBy:S.me?.id||null},{before:null});
         if(gi===actG)ED.focus={sid:ref.id,idx:actI,caret:actC};focusId=ref.id;}
       /* on retire de cette section les blocs passés dans les nouvelles scènes ; ils réapparaissent dans leurs propres sections */
       let g=-1;for(const el of [...sec.querySelectorAll(".sb")]){if(el.dataset.t==="h")g++;if(g>0)el.remove();}
@@ -2654,11 +2660,11 @@ async function commitScene(sid){
 async function mergeScene(s,into,bl){
   const target=sceneBlocks(into);const moved=cleanBlocks(bl.map(b=>b.t==="h"?{t:"a",x:b.x}:b));
   const blocks=[...target,...moved].filter(b=>b.x.trim());
-  await S.db.doc(base()+"/scenes/"+into.id).update({blocks,body:bodyFromBlocks(blocks),eighths:Math.max(1,Math.round(sceneLines({blocks})/LINES_PER_PAGE*8)),updatedAt:Date.now()});
-  await chunked(S.elements.filter(e=>e.sceneId===s.id),5,e=>S.db.doc(base()+"/elements/"+e.id).update({sceneId:into.id}));
-  await chunked(S.comments.filter(c=>c.sceneId===s.id),5,c=>S.db.doc(base()+"/comments/"+c.id).update({sceneId:into.id}));
-  await chunked(S.shots.filter(x=>x.sceneId===s.id),5,x=>S.db.doc(base()+"/shots/"+x.id).update({sceneId:into.id,pos:(x.pos||0)+1e7}));
-  await S.db.doc(base()+"/scenes/"+s.id).delete();
+  await trk(base()+"/scenes/"+into.id).update({blocks,body:bodyFromBlocks(blocks),eighths:Math.max(1,Math.round(sceneLines({blocks})/LINES_PER_PAGE*8)),updatedAt:Date.now()});
+  await chunked(S.elements.filter(e=>e.sceneId===s.id),5,e=>trk(base()+"/elements/"+e.id).update({sceneId:into.id}));
+  await chunked(S.comments.filter(c=>c.sceneId===s.id),5,c=>trk(base()+"/comments/"+c.id).update({sceneId:into.id}));
+  await chunked(S.shots.filter(x=>x.sceneId===s.id),5,x=>trk(base()+"/shots/"+x.id).update({sceneId:into.id,pos:(x.pos||0)+1e7}));
+  await trk(base()+"/scenes/"+s.id).delete();
   const sec=$("#edpage")?.querySelector(`.ed-scene[data-sid="${CSS.escape(s.id)}"]`);if(sec)sec.remove();
   ED.sigs.delete(into.id);ED.focus={sid:into.id,idx:1+target.length,caret:0};
   toast("Scène "+s.num+" fusionnée avec la scène "+into.num+".");render();
@@ -2666,7 +2672,7 @@ async function mergeScene(s,into,bl){
 function renumberScenes(){
   const m=modal(`<h3>Renuméroter les scènes</h3><p>Les ${S.scenes.length} scènes seront numérotées de 1 à ${S.scenes.length} dans l'ordre du scénario. Les numéros du plan de travail et des fiches suivront.</p><div class="mfoot"><button class="btn" id="rn-c">Annuler</button><button class="btn primary" id="rn-ok">Renuméroter</button></div>`);
   m.querySelector("#rn-c").onclick=()=>m.remove();
-  m.querySelector("#rn-ok").onclick=async()=>{m.remove();try{await chunked(S.scenes.map((s,i)=>({s,n:String(i+1)})).filter(x=>x.s.num!==x.n),5,x=>S.db.doc(base()+"/scenes/"+x.s.id).update({num:x.n}));toast("Scènes renumérotées.");}catch(e){writeErr(e);}};
+  m.querySelector("#rn-ok").onclick=async()=>{m.remove();try{await hGroup("Renuméroter les scènes",()=>chunked(S.scenes.map((s,i)=>({s,n:String(i+1)})).filter(x=>x.s.num!==x.n),5,x=>trk(base()+"/scenes/"+x.s.id).update({num:x.n})));toast("Scènes renumérotées.");}catch(e){writeErr(e);}};
 }
 
 /* exports du scénario */
@@ -2866,7 +2872,7 @@ function planMenu(anchor){
     ${alerts.length?`<details class="alerts"><summary>${alerts.length} rôle${alerts.length>1?"s":""} sur des jours non consécutifs</summary><ul>${alerts.map(a=>`<li><b>${esc(a.name)}</b> : ${a.days.map(i=>"J"+(i+1)).join(", ")}</li>`).join("")}</ul><p class="empty">Regrouper ses scènes réduit le nombre de jours où ce comédien est convoqué.</p></details>`:""}
     <div class="mfoot"><span></span><button class="btn small" type="button" data-close>Fermer</button></div>`;
   const tg=d.querySelector("#pm-target");
-  const saveT=()=>{if(!S.canWrite)return;const v=Math.max(0.5,Math.min(20,Number(tg.value)||4));if(v===(Number(P()?.pagesPerDay)||4))return;S.db.doc("projects/"+S.pid).update({pagesPerDay:v}).catch(writeErr);};
+  const saveT=()=>{if(!S.canWrite)return;const v=Math.max(0.5,Math.min(20,Number(tg.value)||4));if(v===(Number(P()?.pagesPerDay)||4))return;trk("projects/"+S.pid).update({pagesPerDay:v},{label:"Pages par jour"}).catch(writeErr);};
   tg.onchange=saveT;tg.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();saveT();tg.blur();}};
   const act={reports:()=>openRecap(),lieux:openLieux,auto:openAutoPlan,
     day:async()=>{const id=await addDay();if(id){planOpenSet().add(id);planOpenSave();render();}}};
@@ -2951,7 +2957,7 @@ function renderPlan(){
 }
 
 function bindPlan(box){
-  const t=$("#target");if(t)t.onchange=()=>{const v=Math.max(0.5,Math.min(20,Number(t.value)||4));S.db.doc("projects/"+S.pid).update({pagesPerDay:v}).catch(writeErr);};
+  const t=$("#target");if(t)t.onchange=()=>{const v=Math.max(0.5,Math.min(20,Number(t.value)||4));trk("projects/"+S.pid).update({pagesPerDay:v},{label:"Pages par jour"}).catch(writeErr);};
   const on=(id,fn)=>{const b=document.getElementById(id);if(b)b.onclick=fn;};
   on("pl-menu",e=>planMenu(e.currentTarget));on("pl-reports",()=>openRecap());on("pl-lieux",openLieux);on("pl-day",async()=>{const id=await addDay();if(id){planOpenSet().add(id);planOpenSave();render();}});on("pl-auto",openAutoPlan);
   on("g-lieu",()=>{S.planGroup="lieu";render();});on("g-decor",()=>{S.planGroup="decor";render();});
@@ -3055,19 +3061,19 @@ function openLieux(){
     });
     const f=box.querySelector("#lx-new");f.onsubmit=async ev=>{ev.preventDefault();const n=box.querySelector("#lx-name").value.trim();if(!n)return;const a=box.querySelector("#lx-addr").value.trim();
       box.querySelector("#lx-name").value="";box.querySelector("#lx-addr").value="";
-      try{await S.db.collection(base()+"/locations").add({name:n.slice(0,120),address:a.slice(0,240),decors:[],createdAt:Date.now()});}catch(e){writeErr(e);}};
-    box.querySelectorAll(".lx-n").forEach(i=>i.onchange=()=>{const v=i.value.trim();if(v)S.db.doc(base()+"/locations/"+i.dataset.lid).update({name:v}).catch(writeErr);});
-    box.querySelectorAll(".lx-a").forEach(i=>i.onchange=()=>S.db.doc(base()+"/locations/"+i.dataset.lid).update({address:i.value.trim()}).catch(writeErr));
-    box.querySelectorAll(".lx-del").forEach(b=>b.onclick=()=>S.db.doc(base()+"/locations/"+b.dataset.lid).delete().catch(writeErr));
+      try{await trk(base()+"/locations/"+uid()).set({name:n.slice(0,120),address:a.slice(0,240),decors:[],createdAt:Date.now()},{before:null,label:"Lieu « "+n.slice(0,40)+" » ajouté"});}catch(e){writeErr(e);}};
+    box.querySelectorAll(".lx-n").forEach(i=>i.onchange=()=>{const v=i.value.trim();if(v)trk(base()+"/locations/"+i.dataset.lid).update({name:v},{label:"Nom du lieu"}).catch(writeErr);});
+    box.querySelectorAll(".lx-a").forEach(i=>i.onchange=()=>trk(base()+"/locations/"+i.dataset.lid).update({address:i.value.trim()},{label:"Adresse du lieu"}).catch(writeErr));
+    box.querySelectorAll(".lx-del").forEach(b=>b.onclick=()=>trk(base()+"/locations/"+b.dataset.lid).delete({label:"Lieu supprimé"}).catch(writeErr));
     box.querySelectorAll(".lx-sel").forEach(sel=>sel.onchange=()=>assignDecor(sel.dataset.key,sel.value));
   };
   S.modalRefresh=draw;draw();
 }
 async function assignDecor(key,lid){
-  try{
-    for(const l of S.locations){if((l.decors||[]).includes(key)&&l.id!==lid)await S.db.doc(base()+"/locations/"+l.id).update({decors:(l.decors||[]).filter(k=>k!==key)});}
-    const t=S.locations.find(l=>l.id===lid);if(t&&!(t.decors||[]).includes(key))await S.db.doc(base()+"/locations/"+t.id).update({decors:[...(t.decors||[]),key]});
-  }catch(e){writeErr(e);}
+  try{await hGroup("Lieu de tournage d'un décor",async()=>{
+    for(const l of S.locations){if((l.decors||[]).includes(key)&&l.id!==lid)await trk(base()+"/locations/"+l.id).update({decors:(l.decors||[]).filter(k=>k!==key)});}
+    const t=S.locations.find(l=>l.id===lid);if(t&&!(t.decors||[]).includes(key))await trk(base()+"/locations/"+t.id).update({decors:[...(t.decors||[]),key]});
+  });}catch(e){writeErr(e);}
 }
 
 /* plan automatique */
@@ -3123,7 +3129,7 @@ function openAutoPlan(){
         if(!date){const ds=keepDays.map(d=>d.date).filter(Boolean).sort();if(ds.length){const x=new Date(ds[ds.length-1]+"T12:00:00");if(!isNaN(x)){x.setDate(x.getDate()+1);date=x.toISOString().slice(0,10);}}}}
       else{order=S.days.reduce((a,x)=>Math.max(a,x.order||0),0);if(!date)date=nextDate();}
       date=date||"";
-      await S.db.doc("projects/"+S.pid).update({pagesPerDay:t8/8});
+      await trk("projects/"+S.pid).update({pagesPerDay:t8/8});
       for(const ids of plan){const did=uid();order++;
         await trk(base()+"/days/"+did).set({order,date:date||"",createdAt:Date.now()},{before:null});
         await chunked(ids.map((sid,i)=>({sid,i})),5,({sid,i})=>trk(base()+"/scenes/"+sid).update({dayId:did,dayPos:(i+1)*1024}));
@@ -4062,40 +4068,65 @@ function hCur(path){
   let v=null;const b=base()+"/";
   if(path==="projects/"+S.pid)v=P()||null;
   else if(path.startsWith(b)){const[col,id]=path.slice(b.length).split("/");
-    const arr=col==="shots"?S.shots:col==="scenes"?S.scenes:col==="backups"?S.backups:col==="elements"?S.elements:col==="days"?S.days:col==="locations"?S.locations:null;if(arr)v=arr.find(x=>x.id===id)||null;}
+    const arr=col==="shots"?S.shots:col==="scenes"?S.scenes:col==="backups"?S.backups:col==="elements"?S.elements:col==="days"?S.days:col==="locations"?S.locations:col==="comments"?S.comments:null;if(arr)v=arr.find(x=>x.id===id)||null;}
   if(!v&&H.shadow.has(path))return hClone(H.shadow.get(path));
   if(!v)return null;const{id,...rest}=v;return hClone(rest);
 }
-function hRec(path,before,after,label,key){
-  if(H.applying)return;H.shadow.set(path,hClone(after));
-  if(H.grp){H.grp.ops.push({path,before,after:hClone(after)});return;}
+/* deux états identiques (hors date et auteur de la modification) : rien à annuler */
+const hSame=(a,b)=>{const c=v=>{if(!v)return v;const{updatedAt,updatedBy,...r}=v;return JSON.stringify(snapNorm(r))||"";};return c(a)===c(b);};
+const isProjPath=path=>/^projects\/[^/]+$/.test(path);
+function hRec(path,before,after,label,key,patch){
+  if(H.applying)return;if(!patch)H.shadow.set(path,hClone(after));
+  if(hSame(before,after))return;
+  if(H.grp){H.grp.ops.push({path,before,after:hClone(after),patch:!!patch});return;}
   const last=H.undo[H.undo.length-1];
   if(key&&last&&last.key===key&&Date.now()-last.at<6000&&last.ops.length===1&&last.ops[0].path===path){last.ops[0].after=hClone(after);last.at=Date.now();}
-  else{H.undo.push({label:label||"Modification",key:key||null,at:Date.now(),ops:[{path,before,after:hClone(after)}]});if(H.undo.length>80)H.undo.shift();}
+  else{H.undo.push({label:label||"Modification",key:key||null,at:Date.now(),ops:[{path,before,after:hClone(after),patch:!!patch}]});if(H.undo.length>80)H.undo.shift();}
   H.redo=[];hButtons();
 }
 /* référence suivie : chaque écriture garde l'état d'avant pour pouvoir l'annuler */
 function trk(path){const ref=S.db.doc(path);return{
   async set(d,o={}){const before=o.before!==undefined?o.before:hCur(path);await ref.set(d);hRec(path,before,d,o.label,o.key);},
-  async update(d,o={}){const before=o.before!==undefined?o.before:hCur(path);await ref.update(d);hRec(path,before,before?{...before,...d}:d,o.label,o.key);},
+  async update(d,o={}){
+    /* projet : on ne garde que les champs changés, pour ne pas réécrire tout le projet (membres, rôles…) en annulant */
+    if(isProjPath(path)){const cur=hCur(path)||{};const before={};for(const k of Object.keys(d))before[k]=cur[k]===undefined?null:cur[k];await ref.update(d);hRec(path,before,{...d},o.label,o.key,true);return;}
+    const before=o.before!==undefined?o.before:hCur(path);await ref.update(d);hRec(path,before,before?{...before,...d}:d,o.label,o.key);},
   async delete(o={}){const before=o.before!==undefined?o.before:hCur(path);await ref.delete();hRec(path,before,null,o.label,o.key);}};}
-async function hGroup(label,fn){
+async function hGroup(label,fn,key){
   if(H.grp)return fn();
-  H.grp={label,ops:[],at:Date.now()};
+  H.grp={label,key:key||null,ops:[],at:Date.now(),t0:Date.now()};
   try{return await fn();}
-  finally{const g=H.grp;H.grp=null;if(g.ops.length){H.undo.push(g);if(H.undo.length>80)H.undo.shift();H.redo=[];}hButtons();}
+  finally{const g=H.grp;H.grp=null;
+    if(g.ops.length){const last=H.undo[H.undo.length-1];const now=Date.now();
+      /* frappe continue dans la même scène : une seule étape (jusqu'à 6 s de pause, 20 s au plus) */
+      if(key&&last&&last.key===key&&now-last.at<6000&&now-(last.t0||last.at)<20000&&g.ops.length===1&&last.ops.length===1&&last.ops[0].path===g.ops[0].path&&g.ops[0].before){last.ops[0].after=g.ops[0].after;last.at=now;}
+      else{H.undo.push(g);if(H.undo.length>80)H.undo.shift();}
+      H.redo=[];}
+    hButtons();}
 }
-async function hApply(path,val){const r=S.db.doc(path);if(val==null){try{await r.delete();}catch{}}else await r.set(val);H.shadow.set(path,hClone(val));}
+async function hApply(path,val,patch){const r=S.db.doc(path);
+  if(patch){await r.update(val||{});return;}
+  if(val==null){try{await r.delete();}catch{}}else await r.set(val);H.shadow.set(path,hClone(val));}
 async function hFlush(){for(const[k,pd]of[...DEC.pend])decNow(pd.id,pd.f,pd.v);await flushEditor();}
 async function hStep(dir){
   if(H.busy||H.grp||S.busy)return;
   await hFlush();
   const from=dir<0?H.undo:H.redo,to=dir<0?H.redo:H.undo;const st=from.pop();if(!st){hButtons();return;}
-  H.busy=true;H.applying=true;hButtons();
-  try{const ops=dir<0?[...st.ops].reverse():st.ops;for(const o of ops)await hApply(o.path,dir<0?o.before:o.after);
+  H.busy=true;H.applying=true;hButtons();const edf=edHistoryStart();
+  try{const ops=dir<0?[...st.ops].reverse():st.ops;for(const o of ops)await hApply(o.path,dir<0?o.before:o.after,o.patch);
     st.at=0;to.push(st);toast((dir<0?"Annulé : ":"Rétabli : ")+st.label);}
   catch(e){from.push(st);writeErr(e);}
-  finally{H.applying=false;H.busy=false;ED.sigs.clear();render();hButtons();}
+  finally{H.applying=false;H.busy=false;ED.sigs.clear();render();hButtons();edHistoryEnd(edf);}
+}
+/* scénario : on quitte le bloc en cours pour que le texte annulé s'affiche, puis on remet le curseur au même endroit */
+function edHistoryStart(){
+  const page=$("#edpage");const a=document.activeElement;if(!page||!a||!page.contains(a))return null;
+  const el=a.closest(".sb"),sec=a.closest(".ed-scene");let f=null;
+  if(el&&sec)f={sid:sec.dataset.sid,idx:[...sec.querySelectorAll(".sb")].indexOf(el),caret:caretOffset(el)};
+  ED.hist=true;a.blur();return f;
+}
+function edHistoryEnd(f){
+  setTimeout(()=>{ED.hist=false;ED.sigs.clear();if(f&&scene(f.sid))ED.focus=f;render();},250);
 }
 const hUndo=()=>hStep(-1),hRedo=()=>hStep(1);
 function hButtons(){
@@ -4105,10 +4136,11 @@ function hButtons(){
 }
 document.addEventListener("click",e=>{const b=e.target.closest?.(".h-undo,.h-redo");if(!b||b.disabled)return;if(b.classList.contains("h-undo"))hUndo();else hRedo();});
 document.addEventListener("keydown",e=>{
-  if(!["dec","scenes","plan"].includes(S.tab)||S.home||!S.pid||!S.canWrite||document.querySelector(".scrim"))return;
-  const mod=e.metaKey||e.ctrlKey;if(!mod)return;const k=e.key.toLowerCase();
+  if(!["script","dec","scenes","plan"].includes(S.tab)||S.home||!S.pid||!S.canWrite||document.querySelector(".scrim"))return;
+  const mod=e.metaKey||e.ctrlKey;if(!mod||e.altKey)return;const k=e.key.toLowerCase();
   if(k!=="z"&&k!=="y")return;
-  const tg=e.target;if(tg.closest&&tg.closest("input,textarea,select,[contenteditable]"))return;
+  const tg=e.target;if(tg.closest&&tg.closest("input,textarea,select"))return;
+  if(tg.closest&&tg.closest("[contenteditable]")&&!tg.closest("#edpage"))return;
   e.preventDefault();if(k==="y"||e.shiftKey)hRedo();else hUndo();
 });
 
