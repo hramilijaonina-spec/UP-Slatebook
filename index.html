@@ -1092,8 +1092,8 @@ const CATS=[
  {id:"animals",label:"Animaux",color:"#a8613b"},
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
-/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage · 1.25.0 notifications des demandes d accès (téléphone et navigateur) */
-const APP_VERSION="1.25.0";const APP_DATE="3 nov. 2026";
+/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage · 1.25.0 notifications des demandes d accès (téléphone et navigateur) · 1.25.1 « Taxi moto » dans les moyens de transport de l équipe */
+const APP_VERSION="1.25.1";const APP_DATE="3 nov. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -3127,7 +3127,7 @@ const DEPTS=[
 const DEPT=Object.fromEntries(DEPTS.map(d=>[d.id,d]));
 const CREW_STD={real:["Réalisateur","1er assistant réalisateur","Scripte"],image:["Directeur de la photographie","1er assistant caméra","Chef électricien","Chef machiniste"],son:["Chef opérateur son","Perchman"],
   deco:["Chef décorateur","Accessoiriste"],hmc:["Chef costumière","Chef maquilleuse"],regie:["Régisseur général","Chauffeur"],making:["Photographe de plateau"],prod:["Directeur de production","Chargé de production"]};
-const TRANSPORTS=["Véhicule de production","Navette","Véhicule personnel","Moto","Taxi","Taxi-be","À pied"];
+const TRANSPORTS=["Véhicule de production","Navette","Véhicule personnel","Moto","Taxi moto","Taxi","Taxi-be","À pied"];
 const CREW_F=["post","name","contact","address","transport"];
 const CREW={day:"",pending:false,focus:null};
 const crewOf=dep=>S.crew.filter(c=>c.dept===dep).sort((a,b)=>(a.pos||0)-(b.pos||0)||(a.createdAt||0)-(b.createdAt||0));
