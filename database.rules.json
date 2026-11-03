@@ -49,6 +49,10 @@
         ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'h.ramilijaonina@gmail.com' || (root.child('ddc/team').child(auth.token.email.toLowerCase().replace('.', ',')).exists() && (!root.child('ddc/team').child(auth.token.email.toLowerCase().replace('.', ',')).child('role').exists() || root.child('ddc/team').child(auth.token.email.toLowerCase().replace('.', ',')).child('role').val() == 'editor')))",
         ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase() == 'h.ramilijaonina@gmail.com'"
       },
+      "notify": {
+        ".read": "auth != null && auth.token.email_verified == true",
+        ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase() == 'h.ramilijaonina@gmail.com'"
+      },
       "requests": {
         ".read": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase() == 'h.ramilijaonina@gmail.com'",
         ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase() == 'h.ramilijaonina@gmail.com'",
@@ -93,6 +97,10 @@
       },
       "secrets": {
         ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'h.ramilijaonina@gmail.com' || (root.child('up/team').child(auth.token.email.toLowerCase().replace('.', ',')).exists() && (!root.child('up/team').child(auth.token.email.toLowerCase().replace('.', ',')).child('role').exists() || root.child('up/team').child(auth.token.email.toLowerCase().replace('.', ',')).child('role').val() == 'editor')))",
+        ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase() == 'h.ramilijaonina@gmail.com'"
+      },
+      "notify": {
+        ".read": "auth != null && auth.token.email_verified == true",
         ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase() == 'h.ramilijaonina@gmail.com'"
       },
       "requests": {

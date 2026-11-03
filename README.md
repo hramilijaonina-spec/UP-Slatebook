@@ -57,6 +57,8 @@ Le projet Firebase utilisé est `shotlist-298e2` (le même que l'app shotlist).
 
 L'administrateur (`adminEmail` dans `config.js`) ajoute les adresses e-mail des membres (Gmail ou autre) depuis le menu du compte → **Équipe**. Une personne non autorisée qui se connecte envoie automatiquement une demande d'accès : badge rouge sur l'avatar de l'administrateur, à accepter ou refuser dans **Équipe**.
 
+**Notifications des demandes** : dans **Équipe**, « Activer » crée un canal secret ntfy ; l'administrateur installe l'app gratuite **ntfy** sur son téléphone et s'abonne à ce canal. Chaque nouvelle demande d'accès y envoie une notification (au plus une relance toutes les 6 h par personne). Quand l'app est ouverte en arrière-plan, le navigateur affiche aussi une notification. Canal stocké dans `…/notify` (lu par les comptes connectés, modifié par l'administrateur seul).
+
 Chaque membre a un rôle : **Lecteur** (consulte et exporte), **Commentateur** (consulte et commente), **Éditeur** (modifie tout). Seul l'administrateur supprime un projet. Les rôles sont appliqués par l'app et par les règles de la base (`tools/rules.py` génère `database.rules.json`).
 
 ## IA

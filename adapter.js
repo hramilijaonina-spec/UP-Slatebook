@@ -98,6 +98,15 @@ async function completeEmailLink(){
   catch(e){linkPending=false;showLogin(authErr(e&&e.code));}
   finally{try{history.replaceState(null,"",cleanUrl());}catch{}setTimeout(()=>{linkPending=false;},4000);}
 }
+/* ---------- notifications (ntfy) ---------- */
+const NTFY="https://ntfy.sh";
+async function notifyAdmin(title,message){
+  try{const t=(await firebase.database().ref(ROOT+"/notify/topic").get()).val();if(!t||!/^[\w-]{8,64}$/.test(t))return false;
+    /* corps JSON envoyé en text/plain : requête simple, sans pré-vérification CORS */
+    const r=await fetch(NTFY+"/",{method:"POST",body:JSON.stringify({topic:t,title,message,tags:["bust_in_silhouette"],priority:4,click:location.origin+location.pathname})});
+    return r.ok;}catch{return false;}
+}
+function newTopic(){const a=new Uint8Array(12);crypto.getRandomValues(a);return NS+"-demandes-"+[...a].map(x=>x.toString(36).padStart(2,"0")).join("").slice(0,18);}
 function showDenied(u){
   whenBody(async()=>{const g=gate(`<span class="label">${escH(APP_NAME)}</span>
     <h1>Accès en attente</h1>
@@ -109,7 +118,12 @@ function showDenied(u){
     const st=g.querySelector("#ddc-req-st");
     /* demande d'accès : l'administrateur la voit dans l'app et l'accepte en un clic */
     try{const ref=firebase.database().ref(ROOT+"/requests/"+emailKey(u.email));const prev=await ref.get().catch(()=>null);
-      await ref.set({email:(u.email||"").toLowerCase(),name:u.displayName||"",at:prev&&prev.exists()&&prev.val().at||Date.now(),last:Date.now()});
+      const old=prev&&prev.exists()?prev.val():null;
+      await ref.set({email:(u.email||"").toLowerCase(),name:u.displayName||"",at:old&&old.at||Date.now(),last:Date.now(),notified:old&&old.notified||0});
+      /* notification sur le téléphone de l'administrateur : à la première demande, puis au plus une relance toutes les 6 h */
+      if(!old||!old.notified||Date.now()-old.notified>6*3600e3){
+        notifyAdmin("Demande d'accès · "+APP_NAME,(u.displayName?u.displayName+" ("+u.email+")":u.email)+" demande à rejoindre l'équipe.")
+          .then(ok=>{if(ok)ref.update({notified:Date.now()}).catch(()=>{});});}
       st.className="ddc-ok";st.textContent="Ta demande d'accès a été envoyée à l'administrateur. Dès qu'elle est acceptée, clique sur Réessayer.";}
     catch{st.className="empty";st.textContent="Demande à la production de t'ajouter dans Équipe, puis clique sur Réessayer.";}});
 }
@@ -312,8 +326,27 @@ function openTeam(rtdb){
   const m=modal(`<h3>Équipe</h3><p class="empty">Seules les adresses listées ici peuvent ouvrir les projets. Gmail : connexion avec Google ou par lien e-mail. Autres adresses (Yahoo, Outlook, pro…) : connexion par lien e-mail.</p>
     <p class="empty"><b>Lecteur</b> : consulte et exporte · <b>Commentateur</b> : consulte et commente · <b>Éditeur</b> : modifie tout (scénario, dépouillement, IA, plan de travail).</p>
     <form class="addrow" id="ddc-tf"><input type="text" id="ddc-te" placeholder="prenom@exemple.com" aria-label="E-mail" autocomplete="off">${roleSelect("ddc-tr","editor")}<button class="btn" type="submit">Ajouter</button></form>
+    <div id="ddc-nt" class="ddc-nt"></div>
     <div id="ddc-rq"></div>
     <div id="ddc-tl" class="ddc-team"></div><div class="mfoot"><button class="btn primary" id="ddc-tok">Terminé</button></div>`);
+  const ntRef=rtdb.ref(ROOT+"/notify");const ntBox=m.querySelector("#ddc-nt");let ntShow=false;
+  const hn=s=>{const t=(s.val()||{}).topic||"";
+    if(!t){ntBox.innerHTML=`<div class="ddc-nt-row"><span><b>Notifications des demandes</b><br><small>Reçois une notification sur ton téléphone dès qu'une personne demande à rejoindre l'équipe.</small></span><button class="btn small primary" id="ddc-nt-on">Activer</button></div>`;
+      ntBox.querySelector("#ddc-nt-on").onclick=async()=>{try{await ntRef.set({topic:newTopic(),at:Date.now()});ntShow=true;askBrowserNotif();}catch(e){alert("Activation refusée : "+(e.code||e.message)+". Vérifie que les règles de la base sont à jour.");}};return;}
+    ntBox.innerHTML=`<div class="ddc-nt-row"><span><b>Notifications des demandes</b> · <span class="ddc-ok">activées</span><br><small>Canal : <code>${escH(t)}</code></small></span>
+        <span class="ddc-rq-a"><button class="btn small" id="ddc-nt-help">${ntShow?"Masquer":"Installer sur le téléphone"}</button><button class="btn small" id="ddc-nt-test">Tester</button><button class="btn ghost small danger" id="ddc-nt-off">Désactiver</button></span></div>
+      ${ntShow?`<ol class="ddc-nt-steps">
+        <li>Installe l'app gratuite <b>ntfy</b> (App Store ou Play Store).</li>
+        <li>Dans ntfy, appuie sur <b>+</b> (s'abonner à un sujet) et saisis le canal : <code>${escH(t)}</code> <button class="btn ghost small" id="ddc-nt-copy">Copier</button><br><small>Serveur : ntfy.sh (par défaut). Sur ordinateur, tu peux aussi ouvrir <a href="${NTFY}/${escH(t)}" target="_blank" rel="noopener">${NTFY.replace("https://","")}/${escH(t)}</a>.</small></li>
+        <li>Appuie sur <b>Tester</b> : la notification doit arriver en quelques secondes.</li></ol>
+        <p class="empty">Garde ce canal pour toi : toute personne qui le connaît recevrait les notifications. En cas de doute, désactive puis réactive pour en créer un nouveau.</p>`:""}`;
+    ntBox.querySelector("#ddc-nt-help").onclick=()=>{ntShow=!ntShow;hn(s);};
+    ntBox.querySelector("#ddc-nt-off").onclick=()=>ntRef.remove().catch(e=>alert("Refusé : "+(e.code||e.message)));
+    const cp=ntBox.querySelector("#ddc-nt-copy");if(cp)cp.onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(t).then(()=>{cp.textContent="Copié";}).catch(()=>{});};
+    ntBox.querySelector("#ddc-nt-test").onclick=async ev=>{const b=ev.currentTarget;b.disabled=true;b.textContent="Envoi…";
+      const ok=await notifyAdmin("Test · "+APP_NAME,"Les notifications des demandes d'accès fonctionnent.");
+      b.disabled=false;b.textContent=ok?"Envoyée ✓":"Échec, réessaie";};};
+  ntRef.on("value",hn,()=>{ntBox.innerHTML="";});
   const ref=rtdb.ref(ROOT+"/team");const list=m.querySelector("#ddc-tl");
   const rqRef=rtdb.ref(ROOT+"/requests");const rqBox=m.querySelector("#ddc-rq");
   const fmt=t=>t?new Date(t).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"";
@@ -330,12 +363,13 @@ function openTeam(rtdb){
     list.querySelectorAll("select[data-mk]").forEach(sel=>sel.onchange=()=>ref.child(sel.dataset.mk).update({role:sel.value}).catch(err=>alert("Modification refusée : "+(err.code||err.message))));
     list.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>ref.child(b.dataset.k).remove());};
   ref.on("value",h,()=>{list.innerHTML=`<p class="ddc-err">Lecture de l'équipe refusée. Vérifie les règles de la base.</p>`;});
-  const close=()=>{ref.off("value",h);rqRef.off("value",hr);m.remove();};
+  const close=()=>{ref.off("value",h);rqRef.off("value",hr);ntRef.off("value",hn);m.remove();};
   m.querySelector("#ddc-tok").onclick=close;
   m.querySelector("#ddc-tf").onsubmit=ev=>{ev.preventDefault();const e=m.querySelector("#ddc-te").value.trim().toLowerCase();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))return;m.querySelector("#ddc-te").value="";const r=m.querySelector("#ddc-tr").value;
     ref.child(emailKey(e)).set({email:e,role:ROLES[r]?r:"editor",at:Date.now()}).then(()=>rqRef.child(emailKey(e)).remove().catch(()=>{})).catch(err=>alert("Ajout refusé : "+(err.code||err.message)));};
 }
+function askBrowserNotif(){try{if(window.Notification&&Notification.permission==="default")Notification.requestPermission();}catch{}}
 function mountAccount(u,isAdmin,rtdb,role){
   whenBody(()=>{
     const top=document.getElementById("top");if(!top||document.getElementById("ddc-acct"))return;
@@ -346,6 +380,9 @@ function mountAccount(u,isAdmin,rtdb,role){
     if(isAdmin&&rtdb){const badge=document.createElement("span");badge.className="ddc-badge";badge.hidden=true;b.append(badge);
       rtdb.ref(ROOT+"/requests").on("value",s=>{const v=s.val()||{};const n=Object.keys(v).length;const prevN=pending;pending=n;
         badge.hidden=!n;badge.textContent=n>9?"9+":String(n);b.setAttribute("aria-label",n?"Mon compte · "+n+" demande"+(n>1?"s":"")+" d'accès":"Mon compte");
+        if(n>prevN&&b.dataset.seen&&document.hidden&&window.Notification&&Notification.permission==="granted"){
+          try{const last=Object.values(v).sort((x,y)=>(y.last||0)-(x.last||0))[0]||{};
+            new Notification("Demande d'accès · "+APP_NAME,{body:(last.email||"Quelqu'un")+" demande à rejoindre l'équipe.",tag:NS+"-demande",icon:"icon-192.png"});}catch{}}
         if(n>prevN&&b.dataset.seen){const t=document.createElement("div");t.className="toast";t.setAttribute("role","status");t.textContent="Nouvelle demande d'accès : ouvre ton avatar → Équipe.";document.body.append(t);setTimeout(()=>t.remove(),6000);}
         b.dataset.seen="1";},()=>{});}
     const net=document.createElement("span");net.id="ddc-net";net.className="ddc-net";net.hidden=true;net.setAttribute("role","status");top.insertBefore(net,b);
