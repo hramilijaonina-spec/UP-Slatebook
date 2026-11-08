@@ -544,6 +544,34 @@ tr.catrow td{background:var(--sunk);font-weight:600;font-size:12.5px}
   .el{padding:5px 6px 5px 9px;font-size:13.5px}
   .el button{min-width:28px;min-height:26px}
 }
+/* découpage : case de la scène, scènes repliées, liste à gauche */
+.dct-seq .sq-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dc-scdone{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:7px;cursor:pointer}
+.dc-scdone:hover{background:color-mix(in srgb,var(--fg) 8%,transparent)}
+.dc-scdone input{width:19px;height:19px;margin:0;accent-color:var(--ok);cursor:pointer}
+.dct td.dct-seq.done{background:color-mix(in srgb,var(--ok) 20%,var(--sunk))}
+.dct td.dct-seq.folded{cursor:pointer}
+.dct td.dct-seq.folded .btn,.dct td.dct-seq.folded .spin{display:none}
+.dct td.dct-seq.folded{padding-block:8px!important}
+.dct tr.dct-fold:hover td{background:color-mix(in srgb,var(--fg) 3%,transparent)}
+.dct tr.dct-fold:hover td.dct-seq.done{background:color-mix(in srgb,var(--ok) 24%,var(--sunk))}
+.dct-foldc{vertical-align:middle!important}
+.dc-unfold{display:flex;align-items:center;gap:14px;width:100%;min-height:100%;border:0;background:transparent;color:var(--fg);text-align:left;padding:14px 16px;cursor:pointer}
+.dc-unfold .fl{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.dc-unfold .fchips{display:flex;flex-wrap:wrap;gap:5px}
+.dc-unfold .fchip{font-style:normal;font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;padding:2px 7px;border-radius:5px;border:1px solid var(--line-strong);color:var(--muted)}
+.dc-unfold .fchip.ok{border-color:color-mix(in srgb,var(--ok) 60%,transparent);background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--fg)}
+.dc-unfold .fchip.opt{border-style:dashed;opacity:.6}
+.dc-unfold .fpv{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-unfold .chev{flex:0 0 auto;width:28px;height:28px;padding:5px;border:1px solid var(--line-strong);border-radius:7px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;color:var(--muted)}
+.dc-unfold:hover .chev,.dc-unfold:focus-visible .chev{color:var(--t-dec);border-color:var(--t-dec)}
+.dcl{display:none}
+.dcl .strip.done:not([aria-current=true]){background:color-mix(in srgb,var(--ok) 10%,transparent)}
+@media (min-width:1000px){
+  .desk.desk-dc{display:grid;grid-template-columns:240px minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-auto-rows:auto;overflow:hidden}
+  .desk-dc .dcl{display:block;grid-column:1;grid-row:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:var(--surface);border-right:1px solid var(--line)}
+  .desk-dc .dc{grid-column:2;grid-row:1}
+}
 /* navigation entre scènes du découpage (téléphone) */
 .dc-scnav{display:none}
 @media (max-width:760px){
@@ -1110,8 +1138,8 @@ const CATS=[
  {id:"animals",label:"Animaux",color:"#a8613b"},
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
-/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage · 1.25.0 notifications des demandes d accès (téléphone et navigateur) · 1.25.1 « Taxi moto » dans les moyens de transport de l équipe · 1.26.0 mise en forme du texte dans le découpage (gras, italique, souligné, barré, couleurs, surlignage) */
-const APP_VERSION="1.26.0";const APP_DATE="4 nov. 2026";
+/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage · 1.25.0 notifications des demandes d accès (téléphone et navigateur) · 1.25.1 « Taxi moto » dans les moyens de transport de l équipe · 1.26.0 mise en forme du texte dans le découpage (gras, italique, souligné, barré, couleurs, surlignage) · 1.27.0 position gardée dans chaque onglet ; découpage : case de la scène, scènes repliées, liste des scènes à gauche */
+const APP_VERSION="1.27.0";const APP_DATE="8 nov. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -1259,7 +1287,7 @@ function openProject(pid){
   S.unsubP.push(S.db.collection(b+"/snapshots").onSnapshot(snap=>{S.snaps=snap.docs.map(d=>({id:d.id,...d.data()}));snapMigrate();render();},onErr));
   sendPresence();render();
 }
-function selectScene(sid){S.sid=sid;store.set("upsb.sid."+S.pid,sid);sendPresence();S.tab="scenes";render();
+function selectScene(sid){if(sid!==S.sid)scrForget("#scriptpane");S.sid=sid;store.set("upsb.sid."+S.pid,sid);sendPresence();S.tab="scenes";render();
   const sp=$("#scriptpane");if(sp)sp.scrollTop=0;}
 function sendPresence(){if(!S.room)return;PRES.tab=presTab();S.room.presence({pid:S.pid||null,sid:S.sid||null,uid:S.me?.id||null,tab:PRES.tab}).catch(()=>{});}
 const PRES={tab:null,edit:null,offT:0,profs:{},want:new Set(),raf:0};
@@ -1457,7 +1485,41 @@ async function renderPeers(){
     return `<img src="${esc(pr.avatarUrl||"")}" alt="" title="${esc((pr.name||"Quelqu'un")+(pr.isMe?" (toi)":"")+where)}" style="border-color:${esc(pr.color||"var(--surface)")}">`;}).join("");
 }
 
+/* ---------- position de défilement mémorisée pour chaque onglet ---------- */
+const SCR={pos:{},key:"",until:0,gen:0};
+function scrKey(){return S.home||!S.pid?"":S.pid+":"+(S.tab==="scenes"?"scenes:"+(S.depView||"scene"):S.tab);}
+function scrId(t){
+  if(t===document||t===document.scrollingElement||t===document.body)return"@win";
+  const d=document.getElementById("desk");if(!d||!(t===d||d.contains(t)))return null;
+  if(t.id)return"#"+t.id;const c=t.classList&&t.classList[0];return c?"."+c:null;
+}
+document.addEventListener("scroll",e=>{
+  if(Date.now()<SCR.until)return;const k=scrKey();if(!k||k!==SCR.key)return;
+  const id=scrId(e.target);if(!id)return;const el=id==="@win"?document.scrollingElement:e.target;
+  (SCR.pos[k]=SCR.pos[k]||{})[id]=[el.scrollTop,el.scrollLeft];},true);
+["wheel","touchstart","keydown","pointerdown"].forEach(t=>addEventListener(t,()=>{if(Date.now()<SCR.until){SCR.until=0;SCR.gen++;}},{capture:true,passive:true}));
+function scrApply(k){
+  const p=SCR.pos[k];if(!p)return;
+  for(const [id,[t,l]] of Object.entries(p)){
+    const el=id==="@win"?document.scrollingElement:document.querySelector(id.startsWith("#")?id:"#desk "+id);
+    if(!el)continue;if(el.scrollTop!==t)el.scrollTop=t;if(el.scrollLeft!==l)el.scrollLeft=l;}
+}
+function scrRestore(k){
+  if(!SCR.pos[k])return;const g=++SCR.gen;SCR.until=Date.now()+450;
+  scrApply(k);requestAnimationFrame(()=>{if(g===SCR.gen)scrApply(k);});
+  [90,260].forEach(ms=>setTimeout(()=>{if(g===SCR.gen&&scrKey()===k)scrApply(k);},ms));
+}
+/* une autre scène choisie : on repart du haut de son texte */
+function scrForget(id){for(const k in SCR.pos)if(k.startsWith(S.pid+":"))delete SCR.pos[k][id];}
 function renderDesk(){
+  const k=scrKey(),changed=k!==SCR.key;
+  const jump=(S.tab==="script"&&typeof ED!=="undefined"&&ED.focus)||(S.tab==="dec"&&DEC.focus);
+  if(changed){SCR.key=k;SCR.until=Date.now()+450;}
+  const desk=$("#desk");if(desk)desk.classList.toggle("desk-dc",!S.home&&!!S.pid&&S.tab==="dec");
+  renderDesk0();
+  if(changed&&k&&!jump)scrRestore(k);
+}
+function renderDesk0(){
   const desk=$("#desk");
   if(!S.projectsLoaded){return;}
   if(S.home||!S.pid){desk.innerHTML=homeHTML();bindHome();return;}
@@ -1466,7 +1528,7 @@ function renderDesk(){
   if(S.tab==="plan"){if(S.dragging){S.pendingRender=true;return;}if(!$("#plan"))desk.innerHTML=`<section class="plan" id="plan"></section>`;keepFocus(renderPlan);return;}
   if(S.tab==="reports"){S.tab="scenes";S.depView="recap";}
   if(S.tab==="scenes"&&S.depView==="recap"){if(!$("#recap"))desk.innerHTML=`<section class="reports recap" id="recap" aria-label="Récapitulatif du dépouillement"></section>`;renderRecap();return;}
-  if(S.tab==="dec"){if(!$("#dc"))desk.innerHTML=`<section class="dc" id="dc" aria-label="Découpage technique"></section>`;renderDecoupage();return;}
+  if(S.tab==="dec"){if(!$("#dc"))desk.innerHTML=`<nav class="dcl" id="dcl" aria-label="Scènes du découpage"></nav><section class="dc" id="dc" aria-label="Découpage technique"></section>`;renderDecoupage();dcListDraw();return;}
   if(!$("#scriptpane")){
     desk.innerHTML=`<nav class="pane list" id="list" aria-label="Scènes"></nav>
       <section class="pane scriptpane" id="scriptpane"></section>
@@ -2884,7 +2946,7 @@ function toggleDay(did,v){const set=planOpenSet();if(v===undefined?!set.has(did)
 async function setDayFilmed(did,v){
   const sc=scenesOfDay(did).filter(s=>!!s.filmed!==v);if(!sc.length)return;
   const i=daysSorted().findIndex(d=>d.id===did);
-  try{await hGroup("J"+(i+1)+(v?" tournée":" à tourner"),()=>chunked(sc,5,s=>trk(base()+"/scenes/"+s.id).update({filmed:v},{label:"Scène "+s.num})));}
+  try{await hGroup("J"+(i+1)+(v?" tournée":" à tourner"),()=>chunked(sc,5,s=>sceneFilmedOps(s,v)));}
   catch(e){writeErr(e);}
 }
 function dayMenu(did,anchor){
@@ -3045,7 +3107,7 @@ function bindPlan(box){
   box.querySelectorAll(".pstrip").forEach(st=>st.ondblclick=e=>{if(e.target.closest(".p-done"))return;selectScene(st.dataset.sid);});
   box.querySelectorAll(".p-donecb").forEach(c=>{c.onclick=e=>e.stopPropagation();c.onchange=()=>{const s=scene(c.dataset.sid);if(!s)return;const v=c.checked;
     c.closest(".pstrip").classList.toggle("done",v);
-    trk(base()+"/scenes/"+s.id).update({filmed:v},{label:v?"Scène "+s.num+" tournée":"Scène "+s.num+" à tourner"}).catch(writeErr);};});
+    setSceneFilmed(s,v);};});
   if(!S.canWrite)return;
   box.querySelectorAll(".pstrip").forEach(st=>{
     st.ondragstart=e=>{S.dragging=st.dataset.sid;st.classList.add("dragging");try{e.dataTransfer.setData("text/plain",st.dataset.sid);e.dataTransfer.effectAllowed="move";}catch{}};
@@ -3396,7 +3458,65 @@ const MOVES=["Fixe","Panoramique","Travelling avant","Travelling arrière","Trav
 const ANGLES=["Normal","Face caméra","Plongée","Contre-plongée","Amorce (par-dessus l'épaule)","Subjectif","Plan débullé"];
 const EFFECTS=["—","Arrêt sur image","Ralenti","Accéléré","Time-lapse"];
 const SHOT_VB={PG:[-190,-150,480,270],PE:[-80,-36,260,146.25],PM:[-50,-6,200,112.5],PA:[-15.8,-4,131.6,74],PRT:[-0.6,-2,101.3,57],PRP:[14.4,0,71.1,40],GP:[30.4,1.5,39.1,22],TGP:[41.1,7,17.8,10],"2S":[-10.8,-4,131.6,74]};
-const DEC={view:"edit",ai:new Set(),prog:new Map(),timers:new Map(),pend:new Map(),focus:null,showOpt:store.get("upsb.dec.opt")!=="0"};
+const DEC={view:"edit",ai:new Set(),prog:new Map(),timers:new Map(),pend:new Map(),focus:null,showOpt:store.get("upsb.dec.opt")!=="0",one:store.get("upsb.dec.one")!=="0",open:null,openPid:null,q:"",listHTML:""};
+/* scène dépliée dans le découpage (une seule à la fois, les autres repliées) */
+function dcOpenSid(){
+  if(DEC.openPid!==S.pid){DEC.openPid=S.pid;DEC.open=store.get("upsb.dec.open."+S.pid)||null;}
+  if(DEC.open&&scene(DEC.open))return DEC.open;
+  return scene(S.sid)?S.sid:(S.scenes[0]?.id||null);
+}
+function dcStickyOffset(){let h=8;const b=document.querySelector("#dc .dc-bar");if(b&&getComputedStyle(b).position==="sticky")h+=b.offsetHeight;
+  const n=$("#dc-scnav");if(n&&getComputedStyle(n).display!=="none")h+=n.offsetHeight;return h;}
+function dcReveal(sid,smooth){
+  const a=document.querySelector(`#dc td.dct-seq[data-sid="${CSS.escape(sid)}"]`);if(!a)return;
+  const tr=a.closest("tr"),sc=dcScroller(tr)||document.scrollingElement;
+  const top=sc===document.scrollingElement?tr.getBoundingClientRect().top+scrollY:tr.getBoundingClientRect().top-sc.getBoundingClientRect().top+sc.scrollTop;
+  DEC.navSid=sid;DEC.navLock=Date.now();
+  sc.scrollTo({top:Math.max(0,top-dcStickyOffset()),behavior:smooth?"smooth":"auto"});
+}
+function dcOpen(sid){
+  if(!scene(sid))return;
+  if(DEC.one&&dcOpenSid()!==sid){DEC.open=sid;DEC.openPid=S.pid;store.set("upsb.dec.open."+S.pid,sid);renderDecoupage();dcListDraw();}
+  else{DEC.open=sid;store.set("upsb.dec.open."+S.pid,sid);dcListDraw();}
+  dcReveal(sid,false);dcNavDraw();
+}
+/* liste des scènes à gauche (ordinateur, tablette à l'horizontale) */
+function dcListDraw(){
+  const nav=$("#dcl");if(!nav)return;
+  if(!nav.querySelector(".dcl-items")){
+    nav.innerHTML=`<div class="list-head"><input type="text" id="dcl-q" placeholder="Chercher une scène" aria-label="Chercher une scène" value="${esc(DEC.q)}"><span class="label dcl-count" style="width:100%"></span></div><div class="dcl-items"></div>`;
+    nav.querySelector("#dcl-q").oninput=e=>{DEC.q=e.target.value;dcListDraw();};
+    nav.addEventListener("click",e=>{const b=e.target.closest(".strip[data-sid]");if(b)dcOpen(b.dataset.sid);});
+  }
+  const q=norm(DEC.q),open=dcOpenSid();
+  const list=S.scenes.filter(x=>!q||norm(x.num+" "+x.heading+" "+(x.location||"")).includes(q));
+  const nShots=S.shots.length,nDone=S.scenes.filter(x=>x.filmed).length;
+  const html=list.map(x=>{const all=shotsOf(x.id);const l=all.filter(y=>!isOpt(y));
+    return `<button type="button" class="strip${x.filmed?" done":""}" data-sid="${esc(x.id)}" aria-current="${x.id===open}">
+      <span class="band" style="background:${bandColor(x)}"></span><span class="num">${esc(x.num)}</span>
+      <span class="hd" title="${esc(x.heading)}">${esc(x.location||x.heading)}</span><span class="side">${fmtDur(sumDur(l))}</span>
+      <span class="meta"><span>${l.length} plan${l.length>1?"s":""}</span>${progHTML(x)}</span></button>`;}).join("")||`<p class="empty" style="padding:12px">Aucune scène ne correspond.</p>`;
+  const cnt=nav.querySelector(".dcl-count");const ct=`${S.scenes.length} scènes · ${nShots} plan${nShots>1?"s":""} · ${nDone} tournée${nDone>1?"s":""}`;if(cnt.textContent!==ct)cnt.textContent=ct;
+  if(html===DEC.listHTML&&nav.querySelector(".dcl-items").childElementCount)return;
+  DEC.listHTML=html;const st=nav.scrollTop;nav.querySelector(".dcl-items").innerHTML=html;nav.scrollTop=st;
+  const cur=nav.querySelector('.strip[aria-current="true"]');
+  if(cur){const r=cur.getBoundingClientRect(),n=nav.getBoundingClientRect();const head=nav.querySelector(".list-head").offsetHeight;
+    if(r.top<n.top+head||r.bottom>n.bottom)nav.scrollTop+=r.top-n.top-head-n.height/3;}
+}
+/* case d'une scène : tournée = tous ses plans faits (et inversement) */
+function sceneFilmedOps(s,v){
+  const sh=shotsOf(s.id).filter(x=>!!x.done!==v);
+  return Promise.all([!!s.filmed!==v?trk(base()+"/scenes/"+s.id).update({filmed:v},{label:"Scène "+s.num}):null,
+    chunked(sh,5,x=>shotDoc(x.id).update({done:v},{label:"Plan "+shotNum(x)}))]);
+}
+function setSceneFilmed(s,v){return hGroup(v?"Scène "+s.num+" tournée":"Scène "+s.num+" à tourner",()=>sceneFilmedOps(s,v)).catch(writeErr);}
+/* après la case d'un plan : la scène se coche quand tous ses plans sont faits */
+function syncSceneFromShots(sid,changedId,v){
+  const s=scene(sid);if(!s)return null;const all=shotsOf(sid);const req=all.filter(y=>!isOpt(y));const set=req.length?req:all;
+  const done=set.length>0&&set.every(y=>y.id===changedId?v:!!y.done);
+  if(done===!!s.filmed)return null;
+  return trk(base()+"/scenes/"+s.id).update({filmed:done},{label:done?"Scène "+s.num+" tournée":"Scène "+s.num+" à tourner"});
+}
 
 /* vignettes de cadre dessinées selon la valeur de plan */
 function dcFigure(x){return `<g class="dc-fig" transform="translate(${x-50},0)"><circle cx="50" cy="12" r="7"/><path d="M38 24 Q50 19 62 24 L60 56 L40 56 Z" stroke-width="1"/><line x1="39" y1="26" x2="35" y2="58"/><line x1="61" y1="26" x2="65" y2="58"/><line x1="45" y1="57" x2="43" y2="98"/><line x1="55" y1="57" x2="57" y2="98"/><circle class="eye" cx="47.4" cy="11.6" r="1"/><circle class="eye" cx="52.6" cy="11.6" r="1"/></g>`;}
@@ -3433,11 +3553,14 @@ function dcSoftUpdate(box){
   box.querySelectorAll(".dc-rt[data-f]").forEach(el=>{if(el===a)return;const tr=el.closest("[data-id]");const x=tr&&S.shots.find(y=>y.id===tr.dataset.id);if(!x)return;
     const f=el.dataset.f;const h=rtHTML(rtOf(x,f),f==="sound");if(el.innerHTML!==h)el.innerHTML=h;});
   box.querySelectorAll(".dc-donecb").forEach(c=>{const tr=c.closest("[data-id]");const x=tr&&S.shots.find(y=>y.id===tr.dataset.id);if(x&&c.checked!==!!x.done){c.checked=!!x.done;tr.classList.toggle("done",!!x.done);}});
+  box.querySelectorAll(".dc-sccb").forEach(c=>{const sc=scene(c.dataset.sid);if(!sc)return;const v=!!sc.filmed;if(c.checked!==v)c.checked=v;c.closest("td").classList.toggle("done",v);});
+  dcListDraw();
 }
 function renderDecoupage(){
   const box=$("#dc");if(!box||!S.pid)return;
   if(box.childElementCount&&dcEditing(box)){DEC.renderPending=true;dcSoftUpdate(box);hButtons();return;}
-  const sig=decSig();
+  if(DEC.focus){const fx=S.shots.find(y=>y.id===DEC.focus);if(fx&&DEC.one&&fx.sceneId!==dcOpenSid()){DEC.open=fx.sceneId;store.set("upsb.dec.open."+S.pid,fx.sceneId);}}
+  const sig=decSig()+"|"+DEC.one+"|"+(DEC.one?dcOpenSid():"");
   if(box.childElementCount&&box.dataset.sig===sig&&!DEC.focus){DEC.renderPending=false;hButtons();dcNavUpdate();return;}
   box.dataset.sig=sig;DEC.renderPending=false;
   const scEl=box.scrollHeight>box.clientHeight+1&&/(auto|scroll)/.test(getComputedStyle(box).overflowY)?box:dcScroller(box);
@@ -3464,6 +3587,7 @@ function dcCurrent(){
   return cur.dataset.sid;
 }
 function dcJump(sid){
+  if(DEC.one&&sid!==dcOpenSid()){dcOpen(sid);return;}
   const a=document.querySelector(`#dc td.dct-seq[data-sid="${CSS.escape(sid)}"]`);if(!a)return;
   const tr=a.closest("tr"),nav=$("#dc-scnav"),sc=dcScroller(tr);
   const off=(nav?nav.getBoundingClientRect().height:0)+8;
@@ -3521,9 +3645,17 @@ function decEditHTML(){
       ${canAI?`<button class="btn primary" id="dc-ai" ${S.busy||!todo?"disabled":""} title="${todo?"Propose les plans des scènes pas encore découpées":"Toutes les scènes ont déjà des plans"}">Découper avec l'IA${todo&&todo<S.scenes.length?" · "+todo+" scène"+(todo>1?"s":""):""}</button>`:""}
     </div></div>`;
   const note=!S.shots.length?`<div class="dc-note"><b>Le découpage est vide.</b> Ajoute les plans scène par scène avec « + Ajouter un plan »${canAI?", ou clique sur <b>Découper avec l'IA</b> pour une première proposition plan par plan":""}. Clique ensuite sur une cellule pour la modifier.</div>`:"";
-  let body="";
-  for(const s of S.scenes){const all=shotsOf(s.id);const nOpt=all.filter(isOpt).length;const list=DEC.showOpt?all:all.filter(x=>!isOpt(x));const rows=list.length+(S.canWrite?1:0)||1;
-    const seq=`<td class="dct-seq" data-sid="${esc(s.id)}" rowspan="${rows}"><b>${esc(s.num)}</b><span class="h">${esc(s.heading)}</span><small>${all.length} plan${all.length>1?"s":""} · ${fmtDur(sumDur(all))}${nOpt?" · "+nOpt+" optionnel"+(nOpt>1?"s":"")+(DEC.showOpt?"":" masqué"+(nOpt>1?"s":"")):""}</small>${progHTML(s)}${seqAI(s,all,canAI)}</td>`;
+  let body="";const openSid=dcOpenSid();
+  for(const s of S.scenes){const all=shotsOf(s.id);const nOpt=all.filter(isOpt).length;const list=DEC.showOpt?all:all.filter(x=>!isOpt(x));
+    const folded=DEC.one&&s.id!==openSid;const rows=folded?1:(list.length+(S.canWrite?1:0)||1);
+    const seq=`<td class="dct-seq${s.filmed?" done":""}${folded?" folded":""}" data-sid="${esc(s.id)}" rowspan="${rows}"><div class="sq-top"><b>${esc(s.num)}</b><label class="dc-scdone" title="${s.filmed?"Scène tournée (tous les plans faits)":"Marquer la scène comme tournée : tous ses plans passent en faits"}"><input type="checkbox" class="dc-sccb" data-sid="${esc(s.id)}" ${s.filmed?"checked":""} ${S.canWrite?"":"disabled"} aria-label="Scène ${esc(s.num)} tournée"></label></div><span class="h">${esc(s.heading)}</span><small>${all.length} plan${all.length>1?"s":""} · ${fmtDur(sumDur(all))}${nOpt?" · "+nOpt+" optionnel"+(nOpt>1?"s":"")+(DEC.showOpt?"":" masqué"+(nOpt>1?"s":"")):""}</small>${progHTML(s)}${seqAI(s,all,canAI)}</td>`;
+    if(folded){
+      const chips=list.slice(0,14).map(x=>`<i class="fchip${x.done?" ok":""}${isOpt(x)?" opt":""}">${esc(shotNum(x))}</i>`).join("")+(list.length>14?`<i class="fchip more">+${list.length-14}</i>`:"");
+      const first=list.find(x=>String(x.action||"").trim());const pv=first?String(first.action).replace(/\s+/g," ").trim():"";
+      body+=`<tr class="first dct-fold" data-fold="${esc(s.id)}">${seq}<td colspan="6" class="dct-foldc"><button type="button" class="dc-unfold" data-sid="${esc(s.id)}" aria-expanded="false" aria-label="Déplier la scène ${esc(s.num)}">
+        <span class="fl">${list.length?`<span class="fchips">${chips}</span>${pv?`<span class="fpv">${esc(pv.length>160?pv.slice(0,157)+"…":pv)}</span>`:""}`:`<span class="fpv">${all.length?"Plans optionnels masqués.":"Aucun plan pour l'instant."}</span>`}</span>
+        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></td></tr>`;
+      continue;}
     list.forEach((x,i)=>{body+=shotRowHTML(x,i,i===0?seq:"");});
     if(S.canWrite)body+=`<tr class="dct-add${list.length?"":" first"}">${list.length?"":seq}<td colspan="6"><button class="dc-add" data-sid="${esc(s.id)}">+ Ajouter un plan à la scène ${esc(s.num)}</button></td></tr>`;
     else if(!list.length)body+=`<tr class="first">${seq}<td colspan="6" class="dct-none">${all.length?"Plans optionnels masqués.":"Aucun plan pour cette scène."}</td></tr>`;
@@ -3567,8 +3699,12 @@ function bindDec(box){
   box.querySelectorAll(".dc-cam").forEach(b=>b.onclick=()=>{const x=shotOf(b);if(x)openCamPop(x,b);});
   box.querySelectorAll(".dc-plan").forEach(b=>b.onclick=()=>{const x=shotOf(b);if(x)openPlanPop(x,b);});
   box.querySelectorAll(".dc-donecb").forEach(c=>c.onchange=()=>{const x=shotOf(c);if(!x)return;const v=c.checked;
-    c.closest("tr").classList.toggle("done",v);
-    shotDoc(x.id).update({done:v},{label:v?"Plan "+shotNum(x)+" fait":"Plan "+shotNum(x)+" à refaire"}).catch(writeErr);});
+    c.closest("tr").classList.toggle("done",v);const lb=v?"Plan "+shotNum(x)+" fait":"Plan "+shotNum(x)+" à refaire";
+    hGroup(lb,()=>Promise.all([shotDoc(x.id).update({done:v},{label:lb}),syncSceneFromShots(x.sceneId,x.id,v)])).catch(writeErr);});
+  box.querySelectorAll(".dc-sccb").forEach(c=>{c.onclick=e=>e.stopPropagation();c.onchange=()=>{const s=scene(c.dataset.sid);if(!s)return;
+    c.closest("td").classList.toggle("done",c.checked);setSceneFilmed(s,c.checked);};});
+  box.querySelectorAll(".dc-unfold").forEach(b=>b.onclick=()=>dcOpen(b.dataset.sid));
+  box.querySelectorAll("td.dct-seq.folded").forEach(td=>td.onclick=e=>{if(e.target.closest("button,input,label,a"))return;dcOpen(td.dataset.sid);});
 }
 /* menus contextuels des cellules */
 let dcPopEl=null;
@@ -3588,12 +3724,14 @@ function decMenu(anchor){
   const d=document.createElement("div");d.className="dc-pop dcm";d.dataset.k="menu";d.setAttribute("role","dialog");d.setAttribute("aria-label","Options du découpage");
   d.innerHTML=`<h4>Découpage</h4>
     <label><span class="dc-lbl">Durée cible</span><input type="text" id="dcm-target" value="${tgt?esc(fmtDur(tgt)):""}" placeholder="2:30" inputmode="numeric" ${S.canWrite?"":"disabled"}></label>
+    <label class="dc-switch" title="Replier les autres scènes quand on en ouvre une"><input type="checkbox" role="switch" id="dcm-one" ${DEC.one?"checked":""}><span class="tr" aria-hidden="true"></span>Une scène à la fois</label>
     <label class="dc-switch" title="Afficher ou masquer les plans à 0 s"><input type="checkbox" role="switch" id="dcm-opt" ${DEC.showOpt?"checked":""}><span class="tr" aria-hidden="true"></span>Plans optionnels${nOpt?" ("+nOpt+")":""}</label>
     ${S.dl?`<div class="dcm-ex"><button class="btn small" type="button" data-ex="all">Exporter le découpage…</button></div>`:""}
     <div class="mfoot"><span></span><button class="btn small" type="button" data-close>Fermer</button></div>`;
   const tg=d.querySelector("#dcm-target");
   const saveT=()=>{if(!S.canWrite)return;const v=parseDur(tg.value);if(v===(Number(P()?.targetSec)||0))return;trk("projects/"+S.pid).update({targetSec:v},{label:"Durée cible"}).catch(writeErr);};
   tg.onchange=saveT;tg.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();saveT();tg.blur();}};
+  const one=d.querySelector("#dcm-one");one.onchange=()=>{DEC.one=one.checked;store.set("upsb.dec.one",one.checked?"1":"0");render();};
   const op=d.querySelector("#dcm-opt");op.onchange=()=>{DEC.showOpt=op.checked;store.set("upsb.dec.opt",op.checked?"1":"0");render();};
   d.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{saveT();closeDcPop();openExport("dec");});
   d.querySelector("[data-close]").onclick=()=>{saveT();closeDcPop();};
