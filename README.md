@@ -74,3 +74,5 @@ L'administrateur enregistre une clé API Anthropic pour toute l'équipe : menu d
 | `sw.js` | service worker : ouverture de l'app sans réseau |
 | `config.js` | configuration Firebase, administrateur, modèle |
 | `database.rules.json` | règles de sécurité de la Realtime Database |
+
+- **Langue** : interface en français ou en anglais (menu ☰ → Langue, FR | EN), réglée sur chaque appareil. Le contenu (scénario, plans, éléments, commentaires) reste tel qu'il a été écrit ; l'assistant répond dans la langue choisie.

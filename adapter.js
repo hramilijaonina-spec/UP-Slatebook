@@ -349,7 +349,7 @@ function openTeam(rtdb){
   ntRef.on("value",hn,()=>{ntBox.innerHTML="";});
   const ref=rtdb.ref(ROOT+"/team");const list=m.querySelector("#ddc-tl");
   const rqRef=rtdb.ref(ROOT+"/requests");const rqBox=m.querySelector("#ddc-rq");
-  const fmt=t=>t?new Date(t).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"";
+  const fmt=t=>t?new Date(t).toLocaleString(window.LOC?LOC():"fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"";
   const hr=s=>{const v=s.val()||{};const keys=Object.keys(v).sort((a,b)=>(v[b].last||0)-(v[a].last||0));
     rqBox.innerHTML=keys.length?`<span class="label">Demandes d'accès · ${keys.length}</span><div class="ddc-team ddc-rq">${keys.map(k=>`<div><span>${escH(v[k].email||k.replace(/,/g,"."))}${v[k].name?` <small>${escH(v[k].name)}</small>`:""}<br><small>${escH(fmt(v[k].last||v[k].at))}</small></span><span class="ddc-rq-a">${roleSelect("","editor").replace('<select ','<select data-rk="'+escH(k)+'" ')}<button class="btn small primary" data-ok="${escH(k)}">Accepter</button><button class="btn ghost small danger" data-no="${escH(k)}">Refuser</button></span></div>`).join("")}</div>`:"";
     rqBox.querySelectorAll("[data-ok]").forEach(b=>b.onclick=async()=>{const k=b.dataset.ok;const e=(v[k]&&v[k].email)||k.replace(/,/g,".");b.disabled=true;
