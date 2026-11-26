@@ -1210,8 +1210,8 @@ const CATS=[
  {id:"animals",label:"Animaux",color:"#a8613b"},
 ];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
-/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage · 1.25.0 notifications des demandes d accès (téléphone et navigateur) · 1.25.1 « Taxi moto » dans les moyens de transport de l équipe · 1.26.0 mise en forme du texte dans le découpage (gras, italique, souligné, barré, couleurs, surlignage) · 1.27.0 position gardée dans chaque onglet ; découpage : case de la scène, scènes repliées, liste des scènes à gauche · 1.28.0 interface en français ou en anglais (menu ☰) · 1.28.1 clap : bip, flash et claquette au même instant, réglage du décalage · 1.28.2 clap : export du journal en fichier CSV */
-const APP_VERSION="1.28.2";const APP_DATE="12 nov. 2026";
+/* UP Slatebook — copie de DDC Breakdown 1.10.3 · 1.0 première version UP · 1.1 rôles lecteur, commentateur, éditeur · 1.2 barre d onglets · 1.3 menu, onglets intercalaires, découpage technique, épisodes séparés · 1.7 clap numérique · 1.7.1 champ son du clap · 1.7.2 prise cerclée, son par le lecteur média · 1.7.3 vignettes calées sur le cadre · 1.7.4 renommer une série · 1.7.5 menu du découpage · 1.25.0 notifications des demandes d accès (téléphone et navigateur) · 1.25.1 « Taxi moto » dans les moyens de transport de l équipe · 1.26.0 mise en forme du texte dans le découpage (gras, italique, souligné, barré, couleurs, surlignage) · 1.27.0 position gardée dans chaque onglet ; découpage : case de la scène, scènes repliées, liste des scènes à gauche · 1.28.0 interface en français ou en anglais (menu ☰) · 1.28.1 clap : bip, flash et claquette au même instant, réglage du décalage · 1.28.2 clap : export du journal en fichier CSV · 1.28.3 clap : le son revient (horloge audio vérifiée, lecteur média sur les anciens iPhone) */
+const APP_VERSION="1.28.3";const APP_DATE="26 nov. 2026";
 const STATUS={todo:"À analyser",ai:"À vérifier",ok:"Vérifiée"};
 const BANDS={"INT-J":["var(--strip-intj)","Int. jour"],"EXT-J":["var(--strip-extj)","Ext. jour"],"INT-N":["var(--strip-intn)","Int. nuit"],"EXT-N":["var(--strip-extn)","Ext. nuit"]};
 
@@ -5296,13 +5296,18 @@ boot();
      l'image est affichée à la trame qui tombe sur T. Le réglage « décalage » corrige ce que le téléphone ne déclare pas. */
   const offMs=()=>Number(g("cl-off").value)||0;
   function outLat(c){return Math.max(0,(c.outputLatency||0)+(c.baseLatency||0));}
-  function webReady(){const c=ctx();if(!c)return null;if(c.state!=="running"){try{c.resume();}catch(e){}return null;}return c;}
+  /* iPhone sans réglage de session audio (iOS 16 et avant) : Web Audio est coupé par le bouton silencieux → lecteur média */
+  const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  const webOK=!IOS||!!navigator.audioSession;
+  function webReady(){if(!webOK)return null;const c=ctx();if(!c)return null;if(c.state!=="running"){try{c.resume();}catch(e){}return null;}return c;}
   function scheduleWeb(c,T){
     let at;
     try{const ts=c.getOutputTimestamp&&c.getOutputTimestamp();
       if(ts&&ts.performanceTime>0&&ts.contextTime>0)at=ts.contextTime+(T-ts.performanceTime)/1000;}catch(e){}
-    if(at===undefined)at=c.currentTime+(T-performance.now())/1000-outLat(c);
-    at=Math.max(c.currentTime+0.002,at);
+    /* horloge de sortie peu fiable sur certains navigateurs (Safari) : on la refuse si elle s'écarte de l'estimation simple */
+    const est=c.currentTime+(T-performance.now())/1000-outLat(c);
+    if(at===undefined||!isFinite(at)||Math.abs(at-est)>0.25)at=est;
+    at=Math.min(c.currentTime+0.6,Math.max(c.currentTime+0.002,at));
     const src=c.createBufferSource();src.buffer=noise;src.connect(c.destination);src.start(at);
     if(g("cl-beep").checked){const o=c.createOscillator(),og=c.createGain();o.type="sine";o.frequency.value=1000;
       og.gain.setValueAtTime(0,at);og.gain.linearRampToValueAtTime(0.9,at+0.002);og.gain.setValueAtTime(0.9,at+0.25);og.gain.linearRampToValueAtTime(0,at+0.27);
